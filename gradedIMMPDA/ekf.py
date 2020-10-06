@@ -183,7 +183,8 @@ class EKF:
         """ Check if z is inside sqrt(gate_sized_squared)-sigma ellipse of ekfstate in sensor_state """
 
         # a function to be used in PDA and IMM-PDA
-        gated = None  # TODO in PDA exercise
+        
+        gated = ()  # TODO in PDA exercise
         return gated
 
     def loglikelihood(self,
