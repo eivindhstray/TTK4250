@@ -237,8 +237,9 @@ class IMM(Generic[MT]):
 
         # ! You can assume all the modes have the same reduce and estimate function
         # ! and use eg. self.filters[0] functionality
-        data_reduced = # TODO
-        estimate = # TODO
+        
+        data_reduced = self.filters[0].reduce_mixture(immstate)
+        estimate = self.filters[0].estimate(data_reduced)
         return estimate
 
     def gate(

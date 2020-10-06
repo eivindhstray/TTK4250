@@ -21,7 +21,7 @@ import scipy
 
 # local
 import dynamicmodels as dynmods
-import measurmentmodels as measmods
+import measurementmodels as measmods
 from gaussparams import GaussParams, GaussParamList
 
 # %% The EKF
