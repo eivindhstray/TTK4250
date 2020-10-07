@@ -226,13 +226,13 @@ class IMM(Generic[MT]):
 
         mode_conditioned_ll = np.fromiter(
             (
-                None  # TODO: your state filter (fs under) should be able to calculate the mode conditional log likelihood at z from modestate_s
+                fs.loglikelihood(z, modestate_s)  # TODO: your state filter (fs under) should be able to calculate the mode conditional log likelihood at z from modestate_s
                 for fs, modestate_s in zip(self.filters, immstate.components)
             ),
             dtype=float,
         )
 
-        ll = None  # weighted average of likelihoods (not log!)
+        ll = np.average(mode_conditioned_ll, axis=1, weights=immstate.weights)  # weighted average of likelihoods (not log!)
 
         assert np.isfinite(ll), "IMM.loglikelihood: ll not finite"
         assert isinstance(ll, float) or isinstance(
@@ -273,7 +273,7 @@ class IMM(Generic[MT]):
         )
 
         # flip conditioning order with Bayes to get Pr(s), and Pr(a | s)
-        mode_prob, mode_conditioned_component_prob = None  # TODO
+        mode_prob, mode_conditioned_component_prob = discretebayes.discrete_bayes(weights, component_conditioned_mode_prob)  # TODO
 
         # We need to gather all the state parameters from the associations for mode s into a
         # single list in order to reduce it to a single parameter set.
@@ -281,7 +281,7 @@ class IMM(Generic[MT]):
         # into a single list and append the result of self.filters[s].reduce_mixture
         # The mode s for association j should be available as imm_mixture.components[j].components[s]
 
-        mode_states: List[GaussParams] = None  # TODO
+        mode_states: List[GaussParams] =  [] # TODO
 
         immstate_reduced = MixtureParameters(mode_prob, mode_states)
 
