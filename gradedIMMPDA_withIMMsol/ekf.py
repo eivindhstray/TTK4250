@@ -87,7 +87,7 @@ class EKF:
         sensor_state: Optional[Dict[str, Any]] = None,
     ) -> np.ndarray:
         """Calculate the innovation mean for ekfstate at z in sensor_state."""
-
+        print(ekfstate)
         x = ekfstate.mean
 
         zbar = self.sensor_model.h(x, sensor_state=sensor_state)
