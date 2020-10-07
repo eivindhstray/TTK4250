@@ -20,7 +20,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
     def predict(self, filter_state: ET, Ts: float) -> ET:
         """Predict state estimate Ts time units ahead"""
-        return  self.state_filter.predict(filter_state,Ts)# TODO
+        return  self.state_filter.predict(filter_state,Ts)
 
     def gate(
         self,
@@ -37,7 +37,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
 
         # The loop can be done using ether of these: normal loop, list comprehension or map
-        gated =  [self.state_filter.gate(z,filter_state,g_squared,sensor_state) for z in Z]# TODO: some for loop over elements of Z using self.state_filter.gate
+        gated =  [self.state_filter.gate(z,filter_state,g_squared,sensor_state) for z in Z]
 
         return np.array(gated)
 
@@ -60,7 +60,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
         # calculate log likelihood ratios
         ll[0] =   log_PND + log_clutter #: missed detection
-        ll[1:] = [log_PD+self.state_filter.loglikelihood(z,self.Ts,filter_state) for z in Z]#: some for loop over elements of Z using self.state_filter.loglikelihood
+        ll[1:] = [log_PD+self.state_filter.loglikelihood(z, filter_state, sensor_state=sensor_state) for z in Z]#: some for loop over elements of Z using self.state_filter.loglikelihood
 
         return ll
 
