@@ -20,7 +20,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
     def predict(self, filter_state: ET, Ts: float) -> ET:
         """Predict state estimate Ts time units ahead"""
-        return  # TODO
+        return  self.state_filter.predict(filter_state,Ts)# TODO
 
     def gate(
         self,
@@ -55,13 +55,12 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         log_clutter = np.log(self.clutter_intensity)
 
         m_k = Z.shape[0]
-        A = Z[0].shape[0]
         # allocate
         ll = np.empty(Z.shape[0] + 1)
 
         # calculate log likelihood ratios
-        ll[0] =   log_PND #: missed detection correct???
-        ll[1:] = # TODO: some for loop over elements of Z using self.state_filter.loglikelihood
+        ll[0] =   log_PND + log_clutter #: missed detection
+        ll[1:] = [log_PD+self.state_filter.loglikelihood(z,self.Ts,filter_state) for z in Z]#: some for loop over elements of Z using self.state_filter.loglikelihood
 
         return ll
 
