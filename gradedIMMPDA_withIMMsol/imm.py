@@ -304,7 +304,7 @@ class IMM(Generic[MT]):
         """Check if z is within the gate of any mode in immstate in sensor_state"""
 
         # TODO: find which of the modes gates the measurement z, Hint: self.filters[0].gate
-        mode_gated: List[bool] = [filter.gate(z,immstate,gate_size_square) for filter in self.filters]
+        mode_gated: List[bool] = [filter.gate(z,immstate,gate_size_square,sensor_state=sensor_state) for filter in self.filters]
 
         gated: bool = any(mode_gated) # TODO: check if _any_ of the modes gated the measurement
         return gated

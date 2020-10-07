@@ -37,7 +37,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
 
         # The loop can be done using ether of these: normal loop, list comprehension or map
-        gated =  [self.state_filter.gate(z,filter_state,gate_size_square=g_squared,sensor_state = sensor_state) for z in Z]# TODO: some for loop over elements of Z using self.state_filter.gate
+        gated =  [self.state_filter.gate(z,filter_state,g_squared,sensor_state) for z in Z]# TODO: some for loop over elements of Z using self.state_filter.gate
 
         return np.array(gated)
 
@@ -78,7 +78,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         lls = self.loglikelihood_ratios(Z, filter_state, sensor_state=sensor_state)
         exponentiated_ll = np.exp(lls)
         # probabilities
-        beta = exponentiated_ll/np.sum(exponetiated_ll)# normalize so that sum of probabilities = 1!
+        beta = exponentiated_ll/np.sum(exponentiated_ll)# normalize so that sum of probabilities = 1!
         return beta
 
     def conditional_update(
@@ -124,7 +124,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         Gate -> association probabilities -> conditional update -> reduce mixture.
         """
         # remove the not gated measurements from consideration
-        gated = self.gate(Z,filter_state,sensor_state)# TODO
+        gated = self.gate(Z,filter_state=filter_state,sensor_state=sensor_state)# TODO
 
         Zg = Z[gated]
 
