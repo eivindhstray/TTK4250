@@ -281,7 +281,7 @@ class IMM(Generic[MT]):
         # into a single list and append the result of self.filters[s].reduce_mixture
         # The mode s for association j should be available as imm_mixture.components[j].components[s]
 
-        mode_states: List[GaussParams] =  [ for ] # TODO
+        mode_states: List[GaussParams] =  [sum(mode_conditioned_component_prob)for i,filter in enumerate(self.filters)] # TODO
 
         immstate_reduced = MixtureParameters(mode_prob, mode_states)
 
@@ -304,7 +304,7 @@ class IMM(Generic[MT]):
         """Check if z is within the gate of any mode in immstate in sensor_state"""
 
         # TODO: find which of the modes gates the measurement z, Hint: self.filters[0].gate
-        mode_gated: List[bool] = [filter.gate(z,immstate,gate_size_square) for filter in self.filters[0]]
+        mode_gated: List[bool] = [filter.gate(z,immstate,gate_size_square) for filter in self.filters]
 
         gated: bool = any(mode_gated) # TODO: check if _any_ of the modes gated the measurement
         return gated
