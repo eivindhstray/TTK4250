@@ -281,9 +281,19 @@ class IMM(Generic[MT]):
         # into a single list and append the result of self.filters[s].reduce_mixture
         # The mode s for association j should be available as imm_mixture.components[j].components[s]
 
-        mode_states: List[GaussParams] =  [sum(mode_conditioned_component_prob)for i,filter in enumerate(self.filters)] # TODO
+        mode_states: List[GaussParams]  # TODO
+        
+        gather_list = [[],[]]*immstate_mixture[0].shape[0]#mean,cov * number of modes
+        for association in immstate_mixture.components:
+            for mode,components in association:
+                gather_list[mode][0].append(components.mean)
+                gather_list[mode][1].append(components.cov)
+            
+        
+
 
         immstate_reduced = MixtureParameters(mode_prob, mode_states)
+
 
         return immstate_reduced
 

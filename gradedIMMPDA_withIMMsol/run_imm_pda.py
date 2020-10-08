@@ -165,7 +165,7 @@ imm_filter = imm.IMM(ekf_filters, PI)
 
 tracker = pda.PDA(imm_filter, clutter_intensity, PD, gate_size)
 
-# init_imm_pda_state = tracker.init_filter_state(init__immstate)
+#init_imm_pda_state = tracker.init_filter_state(init__immstate)
 
 
 NEES = np.zeros(K)

@@ -136,7 +136,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
         # make mixture
         filter_state_update_mixture = MixtureParameters(
-            beta, filter_state_update_mixture_components
+            beta, filter_state_updated_mixture_components
         )
 
         # reduce mixture
