@@ -17,7 +17,7 @@ from typing import (
     Iterable,
 )
 from mixturedata import MixtureParameters
-from gaussparams import GaussParams
+from gaussparams import GaussParams,GaussParamList
 from estimatorduck import StateEstimator
 
 # packages
@@ -263,7 +263,7 @@ class IMM(Generic[MT]):
             - reduce self.filter[s].reduce_mixture for each s
         """
 
-        raise NotImplementedError  # TODO remove this when done
+        
         # extract probabilities as array
         ## eg. association weights/beta: Pr(a)
         weights = immstate_mixture.weights
@@ -280,16 +280,17 @@ class IMM(Generic[MT]):
         # for instance loop through the modes, gather the paramters for the association of this mode
         # into a single list and append the result of self.filters[s].reduce_mixture
         # The mode s for association j should be available as imm_mixture.components[j].components[s]
-
-        mode_states: List[GaussParams]  # TODO
-        
-        gather_list = [[],[]]*immstate_mixture[0].shape[0]#mean,cov * number of modes
-        for association in immstate_mixture.components:
-            for mode,components in association:
-                gather_list[mode][0].append(components.mean)
-                gather_list[mode][1].append(components.cov)
-            
-        
+        # p(x| s=i, a=j) = imm_mixture.components[j].components[s]
+        # The sum over a (7.54 in the book) should be left for the reduction in filters[s].reduce_mixture
+        # => sum(a)(p(sIa)*p(xIs,a))
+        #p(sIa = j) = imm_mixture.components[j].weights[s]
+        #p(xIs,a) = imm_mixture.components[j].components[s]
+        mode_states: list[GaussParams]  = [
+            fs.reduce_mixture(MixtureParameters(modestate_conditional_combined_probability, mode_state_comp))
+            for fs, modestate_conditional_combined_probability,mode_state_comp in zip(self.filters,
+            mode_conditioned_component_prob, zip(*[comp.components for comp in immstate_mixture.components]))
+            ]
+            # TODO
 
 
         immstate_reduced = MixtureParameters(mode_prob, mode_states)

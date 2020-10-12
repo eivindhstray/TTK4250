@@ -129,7 +129,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         Zg = Z[gated]
 
         # find association probabilities
-        beta = self.association_probabilities(Zg,filter_state,sensor_state) # TODO
+        beta = self.association_probabilities(Zg,filter_state,sensor_state=sensor_state) # TODO
 
         # find the mixture components
         filter_state_updated_mixture_components = self.conditional_update(Zg,filter_state,sensor_state = sensor_state)# TODO
@@ -141,7 +141,6 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
         # reduce mixture
         filter_state_updated_reduced = self.reduce_mixture(filter_state_update_mixture) # TODO
-
         return filter_state_updated_reduced
 
     def step(

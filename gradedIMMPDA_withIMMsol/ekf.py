@@ -61,7 +61,9 @@ class EKF:
         Ts: float,
     ) -> GaussParams:
         """Predict the EKF state Ts seconds ahead."""
+        
         x, P = ekfstate
+        
 
         assert isPSD(P), "P input to EKF.predict not PSD"
 
@@ -87,8 +89,9 @@ class EKF:
         sensor_state: Optional[Dict[str, Any]] = None,
     ) -> np.ndarray:
         """Calculate the innovation mean for ekfstate at z in sensor_state."""
-        print(ekfstate)
+        
         x = ekfstate.mean
+        
 
         zbar = self.sensor_model.h(x, sensor_state=sensor_state)
 
@@ -123,7 +126,6 @@ class EKF:
         sensor_state: Optional[Dict[str, Any]] = None,
     ) -> GaussParams:
         """Calculate the innovation for ekfstate at z in sensor_state."""
-
         v = self.innovation_mean(z, ekfstate, sensor_state=sensor_state)
         S = self.innovation_cov(z, ekfstate, sensor_state=sensor_state)
 
@@ -212,8 +214,9 @@ class EKF:
         sensor_state: Optional[Dict[str, Any]] = None,
     ) -> float:
         """Calculate the log likelihood of ekfstate at z in sensor_state"""
-
+    
         v, S = self.innovation(z, ekfstate, sensor_state=sensor_state)
+        
 
         cholS = la.cholesky(S, lower=True)
 
@@ -239,6 +242,7 @@ class EKF:
         x = np.array([c.mean for c in ekfstate_mixture.components], dtype=float)
         P = np.array([c.cov for c in ekfstate_mixture.components], dtype=float)
         x_reduced, P_reduced = mixturereduction.gaussian_mixture_moments(w, x, P)
+        print("xred:",x_reduced,"Pred:",P_reduced)
         return GaussParams(x_reduced, P_reduced)
 
     def gate(
