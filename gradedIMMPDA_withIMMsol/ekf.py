@@ -89,7 +89,6 @@ class EKF:
         sensor_state: Optional[Dict[str, Any]] = None,
     ) -> np.ndarray:
         """Calculate the innovation mean for ekfstate at z in sensor_state."""
-        
         x = ekfstate.mean
         
 
@@ -242,7 +241,6 @@ class EKF:
         x = np.array([c.mean for c in ekfstate_mixture.components], dtype=float)
         P = np.array([c.cov for c in ekfstate_mixture.components], dtype=float)
         x_reduced, P_reduced = mixturereduction.gaussian_mixture_moments(w, x, P)
-        print("xred:",x_reduced,"Pred:",P_reduced)
         return GaussParams(x_reduced, P_reduced)
 
     def gate(

@@ -32,7 +32,6 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
     ) -> bool:  # gated (m x 1): gated(j) = true if measurement j is within gate
         """Gate/validate measurements: (z-h(x))'S^(-1)(z-h(x)) <= g^2."""
 
-        M = Z.shape[0]
         g_squared = self.gate_size ** 2
 
 
@@ -127,6 +126,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         gated = self.gate(Z,filter_state=filter_state,sensor_state=sensor_state)# TODO
 
         Zg = Z[gated]
+        
 
         # find association probabilities
         beta = self.association_probabilities(Zg,filter_state,sensor_state=sensor_state) # TODO
@@ -141,6 +141,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
         # reduce mixture
         filter_state_updated_reduced = self.reduce_mixture(filter_state_update_mixture) # TODO
+        print(filter_state_updated_reduced)
         return filter_state_updated_reduced
 
     def step(

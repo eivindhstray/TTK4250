@@ -222,7 +222,6 @@ class IMM(Generic[MT]):
         sensor_state: Dict[str, Any] = None,
     ) -> float:
 
-        raise NotImplementedError  # TODO: remove when implemented
 
         mode_conditioned_ll = np.fromiter(
             (
@@ -285,6 +284,7 @@ class IMM(Generic[MT]):
         # => sum(a)(p(sIa)*p(xIs,a))
         #p(sIa = j) = imm_mixture.components[j].weights[s]
         #p(xIs,a) = imm_mixture.components[j].components[s]
+        print("reduce")
         mode_states: list[GaussParams]  = [
             fs.reduce_mixture(MixtureParameters(modestate_conditional_combined_probability, mode_state_comp))
             for fs, modestate_conditional_combined_probability,mode_state_comp in zip(self.filters,
