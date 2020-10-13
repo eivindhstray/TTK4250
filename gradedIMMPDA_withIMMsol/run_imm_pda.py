@@ -126,24 +126,24 @@ if play_movie:
 sigma_z = 5
 clutter_intensity = 1e-2
 PD = 0.9
-gate_size = 3
+gate_size = 5
 
 # dynamic models
-sigma_a_CV = 1
-sigma_a_CT = 1
-sigma_omega = 0.5
+sigma_a_CV = 0.8
+sigma_a_CT = 0.8
+sigma_omega = 0.3
 
 
 # markov chain
 PI11 = 0.9
 PI22 = 0.9
 
-p10 = 0.9  # initvalue for mode probabilities
+p10 = 0.1  # initvalue for mode probabilities
 
 PI = np.array([[PI11, (1 - PI11)], [(1 - PI22), PI22]])
 assert np.allclose(np.sum(PI, axis=1), 1), "rows of PI must sum to 1"
 
-mean_init = np.array([0, 0, 0, 0, 0])
+mean_init = np.array([0, 20, 0, 0, 0])
 cov_init = np.diag([1, 1, 1, 1, 1]) ** 2  # THIS WILL NOT BE GOOD
 mode_probabilities_init = np.array([p10, (1 - p10)])
 mode_states_init = GaussParams(mean_init, cov_init)
@@ -178,7 +178,6 @@ tracker_predict_list = []
 tracker_estimate_list = []
 # estimate
 for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
-    print("loop")
     tracker_predict = tracker.predict(tracker_update, Ts)
     tracker_update = tracker.update(Zk, tracker_predict)
 

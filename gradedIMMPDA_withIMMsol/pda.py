@@ -56,8 +56,6 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         m_k = Z.shape[0]
         # allocate
         ll = np.zeros(m_k + 1)
-        print(log_PD)
-        print(Z)
         # calculate log likelihood ratios
         ll[0] =   log_PND + log_clutter #: missed detection
         ll[1:] = [log_PD+self.state_filter.loglikelihood(z, filter_state, sensor_state=sensor_state) for z in Z]#: some for loop over elements of Z using self.state_filter.loglikelihood
