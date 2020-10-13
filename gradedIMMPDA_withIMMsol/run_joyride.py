@@ -110,5 +110,5 @@ if play_movie:
         fig2.canvas.draw_idle()
         plt.show(block=False)
         plt.pause(plotpause)
-
+    plt.show()
 # %% setup and track

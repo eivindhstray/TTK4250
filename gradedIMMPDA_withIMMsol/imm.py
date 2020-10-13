@@ -231,7 +231,7 @@ class IMM(Generic[MT]):
             dtype=float,
         )
 
-        ll = np.average(mode_conditioned_ll, axis=1, weights=immstate.weights)  # weighted average of likelihoods (not log!)
+        ll = np.dot(mode_conditioned_ll, immstate.weights)  # weighted average of likelihoods (not log!)
 
         assert np.isfinite(ll), "IMM.loglikelihood: ll not finite"
         assert isinstance(ll, float) or isinstance(
@@ -284,7 +284,7 @@ class IMM(Generic[MT]):
         # => sum(a)(p(sIa)*p(xIs,a))
         #p(sIa = j) = imm_mixture.components[j].weights[s]
         #p(xIs,a) = imm_mixture.components[j].components[s]
-        print("reduce")
+
         mode_states: list[GaussParams]  = [
             fs.reduce_mixture(MixtureParameters(modestate_conditional_combined_probability, mode_state_comp))
             for fs, modestate_conditional_combined_probability,mode_state_comp in zip(self.filters,
@@ -315,7 +315,7 @@ class IMM(Generic[MT]):
         """Check if z is within the gate of any mode in immstate in sensor_state"""
 
         # TODO: find which of the modes gates the measurement z, Hint: self.filters[0].gate
-        mode_gated: List[bool] = [filter.gate(z,immstate,gate_size_square,sensor_state=sensor_state) for filter in self.filters]
+        mode_gated: List[bool] = [filter.gate(z,comp,gate_size_square,sensor_state=sensor_state) for filter,comp in zip(self.filters,immstate.components)]
 
         gated: bool = any(mode_gated) # TODO: check if _any_ of the modes gated the measurement
         return gated

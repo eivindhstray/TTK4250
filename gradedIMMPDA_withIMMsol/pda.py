@@ -55,8 +55,9 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
         m_k = Z.shape[0]
         # allocate
-        ll = np.empty(Z.shape[0] + 1)
-
+        ll = np.zeros(m_k + 1)
+        print(log_PD)
+        print(Z)
         # calculate log likelihood ratios
         ll[0] =   log_PND + log_clutter #: missed detection
         ll[1:] = [log_PD+self.state_filter.loglikelihood(z, filter_state, sensor_state=sensor_state) for z in Z]#: some for loop over elements of Z using self.state_filter.loglikelihood
@@ -97,7 +98,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
                 filter_state # TODO: missed detection
         )
         conditional_update.extend(
-            self.state_filter.update(z) for z in Z # TODO: some loop over Z making a list of updates
+            self.state_filter.update(z,filter_state) for z in Z # TODO: some loop over Z making a list of updates
         )
 
         return conditional_update
@@ -141,7 +142,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
         # reduce mixture
         filter_state_updated_reduced = self.reduce_mixture(filter_state_update_mixture) # TODO
-        print(filter_state_updated_reduced)
+    
         return filter_state_updated_reduced
 
     def step(
