@@ -122,7 +122,7 @@ if play_movie:
 
 # sensor
 
-sigma_z = 12
+sigma_z = 15
 clutter_intensity = 1e-5
 
 #sigma_z = 3
@@ -134,30 +134,26 @@ gate_size = 3
 # dynamic models
 
 sigma_a_CV = 2
-sigma_a_CT = 1
-sigma_a_CV_high = 4
+sigma_a_CT = 4
+sigma_a_CV_high = 3
 
-#sigma_a_CV = 0.25
-#sigma_a_CT = 0.05
-
-sigma_omega = 0.35
-
+sigma_omega = 0.1
 
 #With CV High
 # markov chain
-PI11 = 0.9
-PI22 = 0.9
-PI33 = 0.9
-PI12 = 0.05
-PI13 = 0.05
-PI21 = 0.05
-PI23 = 0.05
-PI31 = 0.05
-PI32 = 0.05
+PI11 = 0.8
+PI22 = 0.8
+PI33 = 0.8
+PI12 = 0.1
+PI13 = 0.1
+PI21 = 0.1
+PI23 = 0.1
+PI31 = 0.1
+PI32 = 0.1
 
-p10 = 0.8  # initvalue for mode probabilities
-p20 = 0.1
-p30 = 0.1
+p10 = 1  # initvalue for mode probabilities
+p20 = 0
+p30 = 0
 #PI = np.array([[PI11, PI12, PI13], [PI21, PI22, PI23], [PI31,PI32,PI33]])
 
 
