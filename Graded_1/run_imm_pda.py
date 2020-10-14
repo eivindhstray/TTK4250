@@ -125,7 +125,7 @@ if play_movie:
 
 # sensor
 
-sigma_z = 2.5
+sigma_z = 2
 clutter_intensity = 1e-5
 
 #sigma_z = 3
@@ -137,14 +137,14 @@ gate_size = 3
 # dynamic models
 
 sigma_a_CV = 0.04
-sigma_a_CT = 0.09
 
-sigma_omega = 0.02
+sigma_a_CT = 0.09
+sigma_omega = 0.04
 
 
 # markov chain
-PI11 = 0.95
-PI22 = 0.95
+PI11 = 0.91
+PI22 = 0.91
 
 p10 = 0.9  # initvalue for mode probabilities
 
@@ -209,8 +209,8 @@ x_hat = np.array([est.mean for est in tracker_estimate_list])
 prob_hat = np.array([upd.weights for upd in tracker_update_list])
 
 # calculate a performance metrics
-poserr = np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=0)
-velerr = np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=0)
+poserr = np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1)
+velerr = np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1)
 posRMSE = np.sqrt(
     np.mean(poserr ** 2)
 )  # not true RMSE (which is over monte carlo simulations)

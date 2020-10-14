@@ -122,38 +122,36 @@ if play_movie:
 
 # sensor
 
-sigma_z = 15
+sigma_z = 18
 clutter_intensity = 1e-5
 
-#sigma_z = 3
-#clutter_intensity = 1e-4
 
 PD = 0.9
 gate_size = 3
 
 # dynamic models
 
-sigma_a_CV = 2
-sigma_a_CT = 4
-sigma_a_CV_high = 3
+sigma_a_CV = 0.9
+sigma_a_CT = 1.5
+sigma_a_CV_high = 1.9
 
-sigma_omega = 0.1
+sigma_omega = 0.05
 
 #With CV High
 # markov chain
-PI11 = 0.8
-PI22 = 0.8
-PI33 = 0.8
-PI12 = 0.1
-PI13 = 0.1
-PI21 = 0.1
-PI23 = 0.1
-PI31 = 0.1
-PI32 = 0.1
+PI11 = 0.9
+PI22 = 0.9
+PI33 = 0.9
+PI12 = 0.05
+PI13 = 0.05
+PI21 = 0.05
+PI23 = 0.05
+PI31 = 0.05
+PI32 = 0.05
 
-p10 = 1  # initvalue for mode probabilities
-p20 = 0
-p30 = 0
+p10 = 0.9  # initvalue for mode probabilities
+p20 = 0.05
+p30 = 0.05
 #PI = np.array([[PI11, PI12, PI13], [PI21, PI22, PI23], [PI31,PI32,PI33]])
 
 
@@ -231,8 +229,8 @@ x_hat = np.array([est.mean for est in tracker_estimate_list])
 prob_hat = np.array([upd.weights for upd in tracker_update_list])
 
 # calculate a performance metrics
-poserr = np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=0)
-velerr = np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=0)
+poserr = np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1)
+velerr = np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1)
 posRMSE = np.sqrt(
     np.mean(poserr ** 2)
 )  # not true RMSE (which is over monte carlo simulations)
