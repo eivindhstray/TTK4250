@@ -125,9 +125,6 @@ if play_movie:
 sigma_z = 12
 clutter_intensity = 1e-5
 
-#sigma_z = 3
-#clutter_intensity = 1e-4
-
 PD = 0.9
 gate_size = 3
 
@@ -135,31 +132,11 @@ gate_size = 3
 
 sigma_a_CV = 2
 sigma_a_CT = 1
-#sigma_a_CV_high = 0.4
 
-#sigma_a_CV = 0.25
-#sigma_a_CT = 0.05
 
 sigma_omega = 0.35
 
-'''
-#With CV High
-# markov chain
-PI11 = 0.95
-PI22 = 0.95
-PI33 = 0.95
-PI12 = 0.025
-PI13 = 0.025
-PI21 = 0.025
-PI23 = 0.025
-PI31 = 0.025
-PI32 = 0.025
 
-p10 = 0.9  # initvalue for mode probabilities
-p20 = 0.025
-p30 = 0.075
-PI = np.array([[PI11, PI12, PI13], [PI21, PI22, PI23], [PI31,PI32,PI33]])
-'''
 #Without CV High
 
 # markov chain
@@ -177,9 +154,7 @@ mean_init = Xgt[0]
 mean_init = np.append(mean_init,0.1)
 cov_init = np.diag([30, 30, 1, 1, 0.5]) ** 2  # THIS WILL NOT BE GOOD
 
-#With CV High
-#mode_probabilities_init = np.array([p10, p20, p30])
-#Without CV High
+
 mode_probabilities_init = np.array([p10,(1-p10)])
 mode_states_init = GaussParams(mean_init, cov_init)
 init_imm_state = MixtureParameters(mode_probabilities_init, [mode_states_init] * 2)

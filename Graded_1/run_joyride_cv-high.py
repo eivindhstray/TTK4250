@@ -135,7 +135,7 @@ gate_size = 3
 
 sigma_a_CV = 2
 sigma_a_CT = 1
-sigma_a_CV_high = 0.4
+sigma_a_CV_high = 4
 
 #sigma_a_CV = 0.25
 #sigma_a_CT = 0.05
@@ -145,19 +145,19 @@ sigma_omega = 0.35
 
 #With CV High
 # markov chain
-PI11 = 0.95
-PI22 = 0.95
-PI33 = 0.95
-PI12 = 0.025
-PI13 = 0.025
-PI21 = 0.025
-PI23 = 0.025
-PI31 = 0.025
-PI32 = 0.025
+PI11 = 0.9
+PI22 = 0.9
+PI33 = 0.9
+PI12 = 0.05
+PI13 = 0.05
+PI21 = 0.05
+PI23 = 0.05
+PI31 = 0.05
+PI32 = 0.05
 
-p10 = 0.9  # initvalue for mode probabilities
-p20 = 0.025
-p30 = 0.075
+p10 = 0.8  # initvalue for mode probabilities
+p20 = 0.1
+p30 = 0.1
 #PI = np.array([[PI11, PI12, PI13], [PI21, PI22, PI23], [PI31,PI32,PI33]])
 
 
@@ -202,6 +202,7 @@ tracker = pda.PDA(imm_filter, clutter_intensity, PD, gate_size)
 NEES = np.zeros(K)
 NEESpos = np.zeros(K)
 NEESvel = np.zeros(K)
+NEESposHigh = np.zeros(K)
 
 tracker_update = init_imm_state
 tracker_update_list = []
@@ -224,7 +225,7 @@ for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
     NEES[k] = estats.NEES(*tracker_estimate, x_true_k, idxs=np.arange(4))
     NEESpos[k] = estats.NEES(*tracker_estimate, x_true_k, idxs=np.arange(2))
     NEESvel[k] = estats.NEES(*tracker_estimate, x_true_k, idxs=np.arange(2, 4))
-
+    #NEESposHigh[k] = estats.NEES(*tracker_estimate, x_true_k, k, idxs = np.arange(4,6))
     tracker_predict_list.append(tracker_predict)
     tracker_update_list.append(tracker_update)
     tracker_estimate_list.append(tracker_estimate)
