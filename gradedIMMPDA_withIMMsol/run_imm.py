@@ -69,7 +69,7 @@ except Exception as e:
 use_pregen = True
 # you can generate your own data if set to false
 if use_pregen:
-    data_filename = "data_for_imm.mat"
+    data_filename = "data_joyride.mat"
     loaded_data = scipy.io.loadmat(data_filename)
     Z = loaded_data["Z"].T
     K = loaded_data["K"].item()
