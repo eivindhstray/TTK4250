@@ -139,6 +139,7 @@ gate_size = 3
 sigma_a_CV = 0.05
 sigma_a_CT = 0.1
 
+
 #sigma_a_CV = 0.25
 #sigma_a_CT = 0.05
 
@@ -171,6 +172,8 @@ measurement_model = measurementmodels.CartesianPosition(sigma_z, state_dim=5)
 dynamic_models: List[dynamicmodels.DynamicModel] = []
 dynamic_models.append(dynamicmodels.WhitenoiseAccelleration(sigma_a_CV, n=5))
 dynamic_models.append(dynamicmodels.ConstantTurnrate(sigma_a_CT, sigma_omega))
+
+
 ekf_filters = []
 ekf_filters.append(ekf.EKF(dynamic_models[0], measurement_model))
 ekf_filters.append(ekf.EKF(dynamic_models[1], measurement_model))

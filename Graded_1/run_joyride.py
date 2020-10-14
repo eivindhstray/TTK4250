@@ -74,6 +74,7 @@ filename_to_load = "data_joyride.mat"
 loaded_data = scipy.io.loadmat(filename_to_load)
 K = loaded_data["K"].item()
 Ts = loaded_data["Ts"].squeeze()
+Tmean = np.mean(Ts)
 Xgt = loaded_data["Xgt"].T
 Z = [zk.T for zk in loaded_data["Z"].ravel()]
 
@@ -117,10 +118,12 @@ if play_movie:
     plt.show()
 # %% setup and track
 
+#Essentially copying run_imm_pda.py and adjusting time which is the only real difference to make the code run
+
 # sensor
 
-sigma_z = 2.3
-clutter_intensity = 1e-5
+sigma_z = 6
+clutter_intensity = 1e-4
 
 #sigma_z = 3
 #clutter_intensity = 1e-4
@@ -130,14 +133,34 @@ gate_size = 3
 
 # dynamic models
 
-sigma_a_CV = 0.05
-sigma_a_CT = 0.1
+sigma_a_CV = 0.2
+sigma_a_CT = 0.4
+#sigma_a_CV_high = 0.4
 
 #sigma_a_CV = 0.25
 #sigma_a_CT = 0.05
 
 sigma_omega = 0.05
 
+'''
+#With CV High
+# markov chain
+PI11 = 0.95
+PI22 = 0.95
+PI33 = 0.95
+PI12 = 0.025
+PI13 = 0.025
+PI21 = 0.025
+PI23 = 0.025
+PI31 = 0.025
+PI32 = 0.025
+
+p10 = 0.9  # initvalue for mode probabilities
+p20 = 0.025
+p30 = 0.075
+PI = np.array([[PI11, PI12, PI13], [PI21, PI22, PI23], [PI31,PI32,PI33]])
+'''
+#Without CV High
 
 # markov chain
 PI11 = 0.95
@@ -146,13 +169,18 @@ PI22 = 0.95
 p10 = 0.9  # initvalue for mode probabilities
 
 PI = np.array([[PI11, (1 - PI11)], [(1 - PI22), PI22]])
+
 assert np.allclose(np.sum(PI, axis=1), 1), "rows of PI must sum to 1"
 
 
-mean_init = np.array([0, 20, 0, 0, 0])
-cov_init = np.diag([5, 5, 3, 3, 1]) ** 2  # THIS WILL NOT BE GOOD
+mean_init = Xgt[0]
+mean_init = np.append(mean_init,0.1)
+cov_init = np.diag([30, 30, 1, 1, 0.5]) ** 2  # THIS WILL NOT BE GOOD
 
-mode_probabilities_init = np.array([p10, (1 - p10)])
+#With CV High
+#mode_probabilities_init = np.array([p10, p20, p30])
+#Without CV High
+mode_probabilities_init = np.array([p10,(1-p10)])
 mode_states_init = GaussParams(mean_init, cov_init)
 init_imm_state = MixtureParameters(mode_probabilities_init, [mode_states_init] * 2)
 
@@ -164,10 +192,12 @@ assert np.allclose(
 measurement_model = measurementmodels.CartesianPosition(sigma_z, state_dim=5)
 dynamic_models: List[dynamicmodels.DynamicModel] = []
 dynamic_models.append(dynamicmodels.WhitenoiseAccelleration(sigma_a_CV, n=5))
+#dynamic_models.append(dynamicmodels.WhitenoiseAccelleration(sigma_a_CV_high, n=5))
 dynamic_models.append(dynamicmodels.ConstantTurnrate(sigma_a_CT, sigma_omega))
 ekf_filters = []
 ekf_filters.append(ekf.EKF(dynamic_models[0], measurement_model))
 ekf_filters.append(ekf.EKF(dynamic_models[1], measurement_model))
+#ekf_filters.append(ekf.EKF(dynamic_models[2], measurement_model))
 imm_filter = imm.IMM(ekf_filters, PI)
 
 tracker = pda.PDA(imm_filter, clutter_intensity, PD, gate_size)
@@ -183,10 +213,15 @@ tracker_update = init_imm_state
 tracker_update_list = []
 tracker_predict_list = []
 tracker_estimate_list = []
+
+Taccumulated = 0.0
+
+
+print(tracker_estimate_list)
 # estimate
 for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
-    dT = Ts[k]-Ts[k-1]
-    tracker_predict = tracker.predict(tracker_update,dT)
+    
+    tracker_predict = tracker.predict(tracker_update,Ts[k-1])
     tracker_update = tracker.update(Zk, tracker_predict)
 
     # You can look at the prediction estimate as well
@@ -238,27 +273,27 @@ axs3[0].set_title(
 )
 axs3[0].axis("equal")
 # probabilities
-axs3[1].plot(np.arange(K) * Ts, prob_hat)
+axs3[1].plot(np.arange(K) * Tmean, prob_hat)
 axs3[1].set_ylim([0, 1])
 axs3[1].set_ylabel("mode probability")
 axs3[1].set_xlabel("time")
 
 # NEES
 fig4, axs4 = plt.subplots(3, sharex=True, num=4, clear=True)
-axs4[0].plot(np.arange(K) * Ts, NEESpos)
-axs4[0].plot([0, (K - 1) * Ts], np.repeat(CI2[None], 2, 0), "--r")
+axs4[0].plot(np.arange(K) * Tmean, NEESpos)
+axs4[0].plot([0, (K - 1) * Tmean], np.repeat(CI2[None], 2, 0), "--r")
 axs4[0].set_ylabel("NEES pos")
 inCIpos = np.mean((CI2[0] <= NEESpos) * (NEESpos <= CI2[1]))
 axs4[0].set_title(f"{inCIpos*100:.1f}% inside {confprob*100:.1f}% CI")
 
-axs4[1].plot(np.arange(K) * Ts, NEESvel)
-axs4[1].plot([0, (K - 1) * Ts], np.repeat(CI2[None], 2, 0), "--r")
+axs4[1].plot(np.arange(K) * Tmean, NEESvel)
+axs4[1].plot([0, (K - 1) * Tmean], np.repeat(CI2[None], 2, 0), "--r")
 axs4[1].set_ylabel("NEES vel")
 inCIvel = np.mean((CI2[0] <= NEESvel) * (NEESvel <= CI2[1]))
 axs4[1].set_title(f"{inCIvel*100:.1f}% inside {confprob*100:.1f}% CI")
 
-axs4[2].plot(np.arange(K) * Ts, NEES)
-axs4[2].plot([0, (K - 1) * Ts], np.repeat(CI4[None], 2, 0), "--r")
+axs4[2].plot(np.arange(K) * Tmean, NEES)
+axs4[2].plot([0, (K - 1) * Tmean], np.repeat(CI4[None], 2, 0), "--r")
 axs4[2].set_ylabel("NEES")
 inCI = np.mean((CI2[0] <= NEES) * (NEES <= CI2[1]))
 axs4[2].set_title(f"{inCI*100:.1f}% inside {confprob*100:.1f}% CI")
@@ -269,10 +304,10 @@ print(f"ANEES = {ANEES:.2f} with CI = [{CI4K[0]:.2f}, {CI4K[1]:.2f}]")
 
 # errors
 fig5, axs5 = plt.subplots(2, num=5, clear=True)
-axs5[0].plot(np.arange(K) * Ts, np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1))
+axs5[0].plot(np.arange(K) * Tmean, np.linalg.norm(x_hat[:, :2] - Xgt[:, :2], axis=1))
 axs5[0].set_ylabel("position error")
 
-axs5[1].plot(np.arange(K) * Ts, np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1))
+axs5[1].plot(np.arange(K) * Tmean, np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1))
 axs5[1].set_ylabel("velocity error")
 
 plt.show()
