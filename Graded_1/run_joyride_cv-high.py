@@ -122,33 +122,33 @@ if play_movie:
 
 # sensor
 
-sigma_z = 25
+sigma_z = 20
 clutter_intensity = 1e-5
 
 
-PD = 0.875
-gate_size = 6
+PD = 0.9
+gate_size = 5
 
 # dynamic models
 
-sigma_a_CV = 0.4  #Constant velocity
-
-sigma_a_CV_high = 3 #Constant velocity high 
-
-sigma_a_CT = 0.9  #Constant turn
+sigma_a_CV = 0.5  #Constant velocity
+sigma_a_CV_high = 5 #Constant velocity high 
+sigma_a_CT = 0.25  #Constant turn
 sigma_omega = 0.03  #Turn rate
 
 #With CV High
 # markov chain
-PI11 = 0.9
-PI22 = 0.9
-PI33 = 0.9
-PI12 = 0.05
-PI13 = 0.05
-PI21 = 0.05
-PI23 = 0.05
-PI31 = 0.05
-PI32 = 0.05
+PI11 = 0.75
+PI12 = 0.15
+PI13 = 0.10
+
+PI21 = 0.1
+PI22 = 0.7
+PI23 = 0.2
+
+PI31 = 0.125
+PI32 = 0.175
+PI33 = 0.7
 
 p10 = 0.9  # initvalue for mode probabilities
 p20 = 0.05
@@ -166,10 +166,10 @@ assert np.allclose(np.sum(PI, axis=1), 1), "rows of PI must sum to 1"
 
 mean_init = Xgt[0]
 mean_init = np.append(mean_init,0.1)
-cov_init = np.diag([12, 12, 2, 2, 1]) ** 2  # THIS WILL NOT BE GOOD
+cov_init = np.diag([20, 20, 2, 2, 1]) ** 2  
 
 #With CV High
-mode_probabilities_init = np.array([0.7, 0.2, 0.1])
+mode_probabilities_init = np.array([p10, p20, p30])
 mode_states_init = GaussParams(mean_init, cov_init)
 init_imm_state = MixtureParameters(mode_probabilities_init, [mode_states_init] * 3)
 
