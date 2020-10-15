@@ -131,10 +131,10 @@ gate_size = 5
 
 # dynamic models
 
-sigma_a_CV = 0.5  #Constant velocity
-sigma_a_CV_high = 5 #Constant velocity high 
-sigma_a_CT = 0.25  #Constant turn
-sigma_omega = 0.03  #Turn rate
+sigma_a_CV = 2  #Constant velocity
+sigma_a_CV_high = 4 #Constant velocity high 
+sigma_a_CT = 0.5  #Constant turn
+sigma_omega = 0.05  #Turn rate
 
 #With CV High
 # markov chain
@@ -146,8 +146,8 @@ PI21 = 0.1
 PI22 = 0.7
 PI23 = 0.2
 
-PI31 = 0.125
-PI32 = 0.175
+PI31 = 0.10
+PI32 = 0.20
 PI33 = 0.7
 
 p10 = 0.9  # initvalue for mode probabilities
