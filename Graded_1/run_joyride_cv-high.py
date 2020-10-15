@@ -122,20 +122,21 @@ if play_movie:
 
 # sensor
 
-sigma_z = 18
+sigma_z = 25
 clutter_intensity = 1e-5
 
 
-PD = 0.9
-gate_size = 3
+PD = 0.875
+gate_size = 6
 
 # dynamic models
 
-sigma_a_CV = 0.9
-sigma_a_CT = 1.5
-sigma_a_CV_high = 1.9
+sigma_a_CV = 0.4  #Constant velocity
 
-sigma_omega = 0.05
+sigma_a_CV_high = 3 #Constant velocity high 
+
+sigma_a_CT = 0.9  #Constant turn
+sigma_omega = 0.03  #Turn rate
 
 #With CV High
 # markov chain
@@ -165,7 +166,7 @@ assert np.allclose(np.sum(PI, axis=1), 1), "rows of PI must sum to 1"
 
 mean_init = Xgt[0]
 mean_init = np.append(mean_init,0.1)
-cov_init = np.diag([30, 30, 1, 1, 0.5]) ** 2  # THIS WILL NOT BE GOOD
+cov_init = np.diag([12, 12, 2, 2, 1]) ** 2  # THIS WILL NOT BE GOOD
 
 #With CV High
 mode_probabilities_init = np.array([0.7, 0.2, 0.1])
@@ -197,16 +198,14 @@ NEES = np.zeros(K)
 NEESpos = np.zeros(K)
 NEESvel = np.zeros(K)
 NEESposHigh = np.zeros(K)
+NIS = np.zeros(K)
 
 tracker_update = init_imm_state
 tracker_update_list = []
 tracker_predict_list = []
 tracker_estimate_list = []
 
-Taccumulated = 0.0
 
-
-print(tracker_estimate_list)
 # estimate
 for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
     
@@ -219,7 +218,6 @@ for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
     NEES[k] = estats.NEES(*tracker_estimate, x_true_k, idxs=np.arange(4))
     NEESpos[k] = estats.NEES(*tracker_estimate, x_true_k, idxs=np.arange(2))
     NEESvel[k] = estats.NEES(*tracker_estimate, x_true_k, idxs=np.arange(2, 4))
-    #NEESposHigh[k] = estats.NEES(*tracker_estimate, x_true_k, k, idxs = np.arange(4,6))
     tracker_predict_list.append(tracker_predict)
     tracker_update_list.append(tracker_update)
     tracker_estimate_list.append(tracker_estimate)
@@ -251,7 +249,6 @@ CI4K = np.array(scipy.stats.chi2.interval(confprob, 4 * K)) / K
 ANEESpos = np.mean(NEESpos)
 ANEESvel = np.mean(NEESvel)
 ANEES = np.mean(NEES)
-
 # %% plots
 # trajectory
 fig3, axs3 = plt.subplots(1, 2, num=3, clear=True)
