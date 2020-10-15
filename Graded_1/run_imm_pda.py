@@ -125,20 +125,20 @@ if play_movie:
 
 # sensor
 
-sigma_z = 2
-clutter_intensity = 1e-5
+sigma_z = 2.1
+clutter_intensity = 1e-4
 
 #sigma_z = 3
 #clutter_intensity = 1e-4
 
-PD = 0.9
+PD = 0.87
 gate_size = 3
 
 # dynamic models
 
-sigma_a_CV = 0.04
+sigma_a_CV = 0.06
 
-sigma_a_CT = 0.09
+sigma_a_CT = 0.11
 sigma_omega = 0.04
 
 
