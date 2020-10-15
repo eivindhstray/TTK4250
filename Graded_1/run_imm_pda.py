@@ -143,8 +143,8 @@ sigma_omega = 0.04
 
 
 # markov chain
-PI11 = 0.91
-PI22 = 0.91
+PI11 = 0.9
+PI22 = 0.9
 
 p10 = 0.9  # initvalue for mode probabilities
 

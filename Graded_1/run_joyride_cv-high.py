@@ -138,17 +138,17 @@ sigma_omega = 0.05  #Turn rate
 
 #With CV High
 # markov chain
-PI11 = 0.75
-PI12 = 0.15
-PI13 = 0.10
+PI11 = 0.75 #Stay on CV
+PI12 = 0.15 #CV -> CT
+PI13 = 0.10 #CV -> CV High
 
-PI21 = 0.1
-PI22 = 0.7
-PI23 = 0.2
+PI21 = 0.10 #CT -> CV
+PI22 = 0.70 #Stay on CT
+PI23 = 0.20 #CT -> CV High
 
-PI31 = 0.10
-PI32 = 0.20
-PI33 = 0.7
+PI31 = 0.20 #CV High -> CV
+PI32 = 0.20 #CV High -> CT
+PI33 = 0.60 #Stay on CV High
 
 p10 = 0.9  # initvalue for mode probabilities
 p20 = 0.05
