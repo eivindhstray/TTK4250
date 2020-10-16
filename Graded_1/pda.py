@@ -20,7 +20,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
     def predict(self, filter_state: ET, Ts: float) -> ET:
         """Predict state estimate Ts time units ahead"""
-        return  self.state_filter.predict(filter_state,Ts)
+        return  self.state_filter.predict(filter_state, Ts)# TODO
 
     def gate(
         self,
@@ -32,13 +32,25 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
     ) -> bool:  # gated (m x 1): gated(j) = true if measurement j is within gate
         """Gate/validate measurements: (z-h(x))'S^(-1)(z-h(x)) <= g^2."""
 
+        M = Z.shape[0]
         g_squared = self.gate_size ** 2
 
-        
-        # The loop can be done using ether of these: normal loop, list comprehension or map
-        gated =  [self.state_filter.gate(z,filter_state,g_squared,sensor_state) for z in Z]
 
-        return np.array(gated)
+        # The loop can be done using ether of these: normal loop, list comprehension or map
+        gated = np.array(
+            [
+                self.state_filter.gate(
+                    zj, 
+                    filter_state, 
+                    gate_size_square=g_squared,
+                    sensor_state=sensor_state,
+                    )
+                    for zj in Z
+            ], 
+                dtype=bool,
+        ) # TODO: some for loop over elements of Z using self.state_filter.gate
+
+        return gated
 
     def loglikelihood_ratios(
         self,  # measurements of shape=(M, m)=(#measurements, dim)
@@ -53,13 +65,20 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         log_PND = np.log(1 - self.PD)  # P_ND = 1 - P_D
         log_clutter = np.log(self.clutter_intensity)
 
-        m_k = Z.shape[0]
         # allocate
-        ll = np.zeros(m_k + 1)
-        # calculate log likelihood ratios
-        ll[0] =   log_PND + log_clutter #: missed detection
-        ll[1:] = [log_PD+self.state_filter.loglikelihood(z, filter_state, sensor_state=sensor_state) for z in Z]#: some for loop over elements of Z using self.state_filter.loglikelihood
+        ll = np.empty(Z.shape[0] + 1)
 
+        # calculate log likelihood ratios
+        ll[0] = log_PND + log_clutter # TODO: missed detection
+        ll[1:] = np.array(
+            [
+                self.state_filter.loglikelihood(
+                    zj, filter_state, sensor_state=sensor_state 
+                )
+                for zj in Z
+            ]# TODO: some for loop over elements of Z using self.state_filter.loglikelihood
+        )
+        ll[1:] += log_PD
         return ll
 
     def association_probabilities(
@@ -74,9 +93,9 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
         # log likelihoods
         lls = self.loglikelihood_ratios(Z, filter_state, sensor_state=sensor_state)
-        exponentiated_ll = np.exp(lls)
+
         # probabilities
-        beta = exponentiated_ll/np.sum(exponentiated_ll)# normalize so that sum of probabilities = 1!
+        beta = np.exp(lls - scipy.special.logsumexp(lls))# TODO
         return beta
 
     def conditional_update(
@@ -93,10 +112,13 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
 
         conditional_update = []
         conditional_update.append(
-                filter_state # TODO: missed detection
+           filter_state # TODO: missed detection
         )
         conditional_update.extend(
-            self.state_filter.update(z,filter_state) for z in Z # TODO: some loop over Z making a list of updates
+           [
+               self.state_filter.update(zj, filter_state, sensor_state=sensor_state)
+               for zj in Z 
+           ] # TODO: some loop over Z making a list of updates
         )
 
         return conditional_update
@@ -105,7 +127,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         self, mixture_filter_state: MixtureParameters[ET]
     ) -> ET:  # the two first moments of the mixture
         """Reduce a Gaussian mixture to a single Gaussian."""
-        return self.state_filter.reduce_mixture(mixture_filter_state) # TODO: utilize self.state_filter to keep this working for both EKF and IMM
+        return  self.state_filter.reduce_mixture(mixture_filter_state)# TODO: utilize self.state_filter to keep this working for both EKF and IMM
 
 
     def update(
@@ -122,25 +144,27 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
         Gate -> association probabilities -> conditional update -> reduce mixture.
         """
         # remove the not gated measurements from consideration
-        gated = self.gate(Z,filter_state=filter_state,sensor_state=sensor_state)# TODO
-
+        gated = self.gate(Z, filter_state, sensor_state=sensor_state)# TODO
         Zg = Z[gated]
-        
 
         # find association probabilities
-        beta = self.association_probabilities(Zg,filter_state,sensor_state=sensor_state) # TODO
+        beta = self.association_probabilities(
+            Zg, filter_state, sensor_state=sensor_state
+        ) # TODO
 
         # find the mixture components
-        filter_state_updated_mixture_components = self.conditional_update(Zg,filter_state,sensor_state = sensor_state)# TODO
+        filter_state_update_mixture_components = self.conditional_update(
+            Zg, filter_state, sensor_state=sensor_state
+        ) # TODO
 
         # make mixture
         filter_state_update_mixture = MixtureParameters(
-            beta, filter_state_updated_mixture_components
+            beta, filter_state_update_mixture_components
         )
 
         # reduce mixture
         filter_state_updated_reduced = self.reduce_mixture(filter_state_update_mixture) # TODO
-    
+
         return filter_state_updated_reduced
 
     def step(
@@ -154,8 +178,10 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
     ) -> ET:
         """Perform a predict update cycle with Ts time units and measurements Z in sensor_state"""
 
-        filter_state_predicted = self.predict(filter_state, Ts)
-        filter_state_updated = self.update(Z, filter_state_predicted, sensor_state=sensor_state)
+        filter_state_predicted = self.predict(filter_state, Ts) # TODO
+        filter_state_updated = self.update(
+            Z, filter_state_predicted, sensor_state=sensor_state
+        ) # TODO
         return filter_state_updated
 
     def estimate(self, filter_state: ET) -> GaussParams:
@@ -165,7 +191,7 @@ class PDA(Generic[ET]):  # Probabilistic Data Association
     def init_filter_state(
         self,
         # need to have the type required by the specified state_filter
-        init_state: "ET_like",
+        init_state: ET,
     ) -> ET:
         """Initialize a filter state to proper form."""
         return self.state_filter.init_filter_state(init_state)

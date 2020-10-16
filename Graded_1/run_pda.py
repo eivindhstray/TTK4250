@@ -9,6 +9,9 @@ import dynamicmodels
 import measurementmodels
 import ekf
 import pda
+import estimationstatistics 
+
+
 
 # %% plot config check and style setup
 
@@ -56,7 +59,7 @@ if use_pregen:
     true_association = loaded_data["a"].ravel()
 else:
     x0 = np.array([0, 0, 1, 1, 0])
-    P0 = np.diag([50, 50, 10, 10, pi / 4]) ** 2
+    P0 = np.diag([50, 50, 10, 10, np.pi / 4]) ** 2
     # model parameters
     sigma_a_true = 0.25
     sigma_omega_true = np.pi / 15
@@ -67,9 +70,8 @@ else:
     # detection and false alarm
     PDtrue = 0.9
     lambdatrue = 3e-4
-    np.rando.rng(10)
+    np.random.rng(10)
     # [Xgt, Z, a] = sampleCTtrack(K, Ts, x0, P0, qtrue, rtrue,PDtrue, lambdatrue);
-    raise NotImplementedError
 # %%
 
 # plot measurements close to the trajectory
@@ -137,10 +139,10 @@ tracker_predict_list = []
 for k, (Zk, x_true_k) in enumerate(zip(Z, Xgt)):
     tracker_predict = tracker.predict(tracker_update,Ts)
     tracker_update = tracker.update(Zk,tracker_predict)
-    NEES[k] = tracker.state_filter.NEES(tracker_update, x_true_k, idx=np.arange(4))
-    NEESpos[k] = tracker.state_filter.NEES(tracker_update, x_true_k, idx=np.arange(2))
-    NEESvel[k] = tracker.state_filter.NEES(
-        tracker_update, x_true_k, idx=np.arange(2, 4)
+    NEES[k] = estimationstatistics.NEES(*tracker_update, x_true_k, idxs=np.arange(4))
+    NEESpos[k] = estimationstatistics.NEES(*tracker_update, x_true_k, idxs=np.arange(2))
+    NEESvel[k] = estimationstatistics.NEES(
+        *tracker_update, x_true_k, idxs=np.arange(2, 4)
         )
 
     tracker_predict_list.append(tracker_predict)
@@ -187,7 +189,7 @@ confprob = confprob
 CI2K = np.array(scipy.stats.chi2.interval(confprob, 2 * K)) / K
 CI4K = np.array(scipy.stats.chi2.interval(confprob, 4 * K)) / K
 ANEESpos = np.mean(NEESpos)
-ANEESvel = np,mean(NEESvel)
+ANEESvel = np.mean(NEESvel)
 ANEES = np.mean(NEES)
 print(f"ANEESpos = {ANEESpos:.2f} with CI = [{CI2K[0]:.2f}, {CI2K[1]:.2f}]")
 print(f"ANEESvel = {ANEESvel:.2f} with CI = [{CI2K[0]:.2f}, {CI2K[1]:.2f}]")
@@ -199,4 +201,6 @@ axs5[0].set_ylabel("position error")
 
 axs5[1].plot(np.arange(K) * Ts, np.linalg.norm(x_hat[:, 2:4] - Xgt[:, 2:4], axis=1))
 axs5[1].set_ylabel("velocity error")
+
+plt.show()
 # %%
