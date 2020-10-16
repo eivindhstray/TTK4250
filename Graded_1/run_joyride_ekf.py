@@ -118,15 +118,15 @@ if play_movie:
 
 # %% setup and track
 # sensor
-sigma_z = 6
+sigma_z = 17
 clutter_intensity = 1e-5
 PD = 0.9
 gate_size = 5
 
 # dynamic models
-sigma_a_CV = 6
-sigma_a_CT = 6
-sigma_omega = 0.05 #* np.pi
+sigma_a_CV = 2
+sigma_a_CT = 2
+sigma_omega = 0.03 #* np.pi
 
 mean_init = Xgt[0]
 mean_init = np.append(mean_init, 0.1)
@@ -227,11 +227,11 @@ print(f"ANEES = {ANEES:.2f} with CI = [{CI4K[0]:.2f}, {CI4K[1]:.2f}]")
 fig3, axs3 = plt.subplots(1, 2, num=2, clear=True)
 for i in range(posRMSE.shape[0]):
     if i == 0:
-        axs3[i].plot(*x_hat[0].T[:2], label=r"$\hat {x} CV$")
+        axs3[i].plot(*x_hat[0].T[:2], label=r"$Predicted Track CV$")
     else:
-        axs3[i].plot(*x_hat[1].T[:2], label=r"$\hat {x} CT$")
+        axs3[i].plot(*x_hat[1].T[:2], label=r"$Predicted track CT$")
 
-    axs3[i].plot(*Xgt.T[:2], label=r"$X_{gt}$")
+    axs3[i].plot(*Xgt.T[:2], label=r"$Ground truth$")
     axs3[i].legend()
     axs3[i].set_title(
          f"RMSE(pos, vel) = ({posRMSE[i]:.3f}, {velRMSE[i]:.3f})\npeak_dev(pos, vel) = ({peak_pos_deviation[i]:.3f}, {peak_vel_deviation[i]:.3f})"
