@@ -122,19 +122,19 @@ if play_movie:
 
 # sensor
 
-sigma_z = 20
+sigma_z = 8
 clutter_intensity = 1e-5
 
 
 PD = 0.9
-gate_size = 5
+gate_size = 2
 
 # dynamic models
 
-sigma_a_CV = 2  #Constant velocity
-sigma_a_CV_high = 4 #Constant velocity high 
-sigma_a_CT = 0.5  #Constant turn
-sigma_omega = 0.05  #Turn rate
+sigma_a_CV = 0.2  #Constant velocity
+sigma_a_CV_high = 0.2 #Constant velocity high 
+sigma_a_CT = 0.1  #Constant turn
+sigma_omega = 0.9  #Turn rate
 
 #With CV High
 # markov chain
