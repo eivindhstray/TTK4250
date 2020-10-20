@@ -457,6 +457,7 @@ class ESKF:
         G_injected[0:6,0:6] = np.eye(6)
         G_injected[6:9,6:9] = np.eye(6)-cross_product_matrix((1/2)*delta_x[ATT_IDX])
         G_injected[9:15,9:15] = np.eye(6)
+
         P_injected = np.zeros(
             (15, 15)
         )  # TODO: Compensate for injection in the covariances
@@ -514,9 +515,9 @@ class ESKF:
             3,
         ), f"ESKF.innovation_GNSS: lever_arm shape incorrect {lever_arm.shape}"
 
-        H = np.zeros((1,))  # TODO: measurement matrix
+        H = np.array([np.eye(3), np.zeros(3,13)])  # TODO: measurement matrix
 
-        v = np.zeros((3,))  # TODO: innovation
+        v = z_GNSS_position - H@x_nominal  # TODO: innovation
 
         # leverarm compensation
         if not np.allclose(lever_arm, 0):
@@ -524,7 +525,7 @@ class ESKF:
             H[:, ERR_ATT_IDX] = -R @ cross_product_matrix(lever_arm, debug=self.debug)
             v -= R @ lever_arm
 
-        S = np.zeros((3, 3))  # TODO: innovation covariance
+        S = H@P@H.T + R_GNSS  # TODO: innovation covariance
 
         assert v.shape == (3,), f"ESKF.innovation_GNSS: v shape incorrect {v.shape}"
         assert S.shape == (3, 3), f"ESKF.innovation_GNSS: S shape incorrect {S.shape}"
