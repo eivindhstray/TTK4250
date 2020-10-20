@@ -128,16 +128,18 @@ class ESKF:
         quaternion_prediction = quaternion_product(quaternion,rhs_quat)  # TODO: Normalize
         quaternion_prediction[0] = 1-la.norm(quaternion[1:],2)
 
-        p = 1/Ts
+        p_ab = self.p_acc
+        p_wb = self.p_gyro
         ##HELP!!
 
         acceleration_bias_prediction = np.zeros(
             (3,)
         )  # TODO: Calculate predicted acceleration bias
+        acceleration_bias_prediction += acceleration_bias - p_ab*(np.eye(3))@acceleration_bias*Ts
         gyroscope_bias_prediction = np.zeros(
             (3,)
         )  # TODO: Calculate predicted gyroscope bias
-
+        gyroscope_bias_prediction += gyroscope_bias - p_wb*(np.eye(3))@gyroscope_bias*Ts
         x_nominal_predicted = np.concatenate(
             (
                 position_prediction,
@@ -193,6 +195,13 @@ class ESKF:
         A[ERR_ACC_BIAS_IDX * ERR_ACC_BIAS_IDX] = np.zeros((3,))
         A[ERR_GYRO_BIAS_IDX * ERR_GYRO_BIAS_IDX] = np.zeros((3,))
 
+        A[VEL_IDX,POS_IDX] = np.eye(3)
+        A[ATT_IDX,VEL_IDX] = -R@(cross_product_matrix(acceleration-x_nominal[ERR_ACC_BIAS_IDX]))
+        A[ATT_IDX,ATT_IDX] = -cross_product_matrix(omega-x_nominal[ERR_GYRO_BIAS_IDX])
+        A[ERR_ATT_IDX,VEL_IDX] = -R
+        A[ERR_ATT_IDX,ERR_ATT_IDX] = self.p_acc*np.eye(3)
+        A[ERR_GYRO_BIAS_IDX,ATT_IDX] = -np.eye(3)
+        A[ERR_GYRO_BIAS_IDX,ERR_GYRO_BIAS_IDX] = self.p_gyro*np.eye(3)
         # Bias correction
         A[VEL_IDX * ERR_ACC_BIAS_IDX] = A[VEL_IDX * ERR_ACC_BIAS_IDX] @ self.S_a
         A[ERR_ATT_IDX * ERR_GYRO_BIAS_IDX] = (
@@ -204,7 +213,7 @@ class ESKF:
             15,
         ), f"ESKF.Aerr: A-error matrix shape incorrect {A.shape}"
         return A
-
+    
     def Gerr(self, x_nominal: np.ndarray,) -> np.ndarray:
         """Calculate the continuous time error state noise input matrix
 
@@ -225,6 +234,10 @@ class ESKF:
         R = quaternion_to_rotation_matrix(x_nominal[ATT_IDX], debug=self.debug)
 
         G = np.zeros((15, 12))
+        G[3:6,0:3] = -R
+        G[6:9,3:6] = - np.eye(3)
+        G[9:12,6:9] = np.eye(3)
+        G[12:15,9:12] = -np.eye(3) 
 
         assert G.shape == (15, 12), f"ESKF.Gerr: G-matrix shape incorrect {G.shape}"
         return G
