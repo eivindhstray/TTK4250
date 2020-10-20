@@ -15,12 +15,16 @@ def cross_product_matrix(n: ArrayLike, debug: bool = True) -> np.ndarray:
     n_1 = n[0]
     n_2 = n[1]
     n_3 = n[2]
-    S[0,1] = - n_3
-    S[1,0] = n_3
-    S[0,2] = n_2
-    S[2,0] = - n_2
-    S[1,2] = - n_1
-    S[2,1] = n_1
+    #S[0,1] = - n_3
+    #S[1,0] = n_3
+    #S[0,2] = n_2
+    #S[2,0] = - n_2
+    #S[1,2] = - n_1
+    #S[2,1] = n_1
+    S = np.array([[0, -n_3, n_2],
+                  [n_3, 0, -n_1],
+                  [-n_2, n_1, 0]], 
+                  dtype=float)
     if debug:
         assert S.shape == (
             3,
