@@ -29,14 +29,19 @@ def quaternion_product(ql: np.ndarray, qr: np.ndarray) -> np.ndarray:
 
     if qr.shape == (4,):
         q_right = qr.copy()
+        eta_right = qr[0]
+        epsilon_right = qr[1:].respahe((3,1))
     elif qr.shape == (3,):
-        q_right = np.concatenate(([0], qr))
+        eta_left = 0
+        epsilon_left = qr.reshape((3,1))
     else:
         raise RuntimeError(
             f"utils.quaternion_product: Quaternion multiplication error, right quaternion wrong shape: {qr.shape}"
         )
 
     quaternion = np.zeros((4,))  # TODO: Implement quaternion product
+    quaternion[0] = eta_left*eta_right - (epsilon_left.T)@epsilon_right
+    quaternion[1:] = eta_left*epsilon_right +eta_right*epsilon_left + utils.cross_product_matrix(epsilon_left)@epsilon_right
 
     # Ensure result is of correct shape
     quaternion = quaternion.ravel()
@@ -75,6 +80,10 @@ def quaternion_to_rotation_matrix(
 
     R = np.zeros((3, 3))  # TODO: Convert from quaternion to rotation matrix
 
+    I = np.identity(3)
+    S_eps = utils.cross_product_matrix(epsilon)
+    R += I + 2*eta*S_eps + 2*S_eps@S_eps
+
     if debug:
         assert np.allclose(
             np.linalg.det(R), 1
@@ -101,11 +110,15 @@ def quaternion_to_euler(quaternion: np.ndarray) -> np.ndarray:
     ), f"quaternion.quaternion_to_euler: Quaternion shape incorrect {quaternion.shape}"
 
     quaternion_squared = quaternion ** 2
+    eta = quaternion[0]
+    e_1 = quaternion[1]
+    e_2 = quaternion[2]
+    e_3 = quaternion[3]
 
     raise NotImplementedError  # TODO: remove when done
-    phi = 0  # TODO: Convert from quaternion to euler angles
-    theta = 0  # TODO: Convert from quaternion to euler angles
-    psi = 0  # TODO: Convert from quaternion to euler angles
+    phi = np.arctan2(2*(e_3*e_2+eta*e_1),eta**2-e_1**2-e_2**2+e_3**2)  # TODO: Convert from quaternion to euler angles
+    theta = np.arcsin(2*(eta*e_2-e_1*e_3))  # TODO: Convert from quaternion to euler angles
+    psi = np.arctan2(2*(e_1*e_2+eta*e_3),eta**2+e_1**2-e_2**2-e_3**2)  # TODO: Convert from quaternion to euler angles
 
     euler_angles = np.array([phi, theta, psi])
     assert euler_angles.shape == (
