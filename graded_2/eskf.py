@@ -681,14 +681,14 @@ class ESKF:
         delta_position = x_nominal[POS_IDX] - x_true[POS_IDX]  # TODO: Delta position
         delta_velocity = x_nominal[VEL_IDX] - x_true[VEL_IDX]  # TODO: Delta velocity
 
-        quaternion_conj = np.array([1, 0, 0, 0])  # TODO: Conjugate of quaternion
+        quaternion_conj = -x_nominal[ATT_IDX]  # TODO: Conjugate of quaternion
 
-        delta_quaternion = np.array([1, 0, 0, 0])  # TODO: Error quaternion
-        delta_theta = np.zeros((3,))
+        delta_quaternion = quaternion_product(quaternion_conj, x_true[ATT_IDX])  # TODO: Error quaternion
+        delta_theta = 2*np.imag(delta_quaternion)
 
         # Concatenation of bias indices
         BIAS_IDX = ACC_BIAS_IDX + GYRO_BIAS_IDX
-        delta_bias = np.zeros((6,))  # TODO: Error biases
+        delta_bias = x_nominal[BIAS_IDX] - x_true[BIAS_IDX]  # TODO: Error biases
 
         d_x = np.concatenate((delta_position, delta_velocity, delta_theta, delta_bias))
 
@@ -724,12 +724,12 @@ class ESKF:
 
         d_x = cls.delta_x(x_nominal, x_true)
 
-        NEES_all = 0  # TODO: NEES all
-        NEES_pos = 0  # TODO: NEES position
-        NEES_vel = 0  # TODO: NEES velocity
-        NEES_att = 0  # TODO: NEES attitude
-        NEES_accbias = 0  # TODO: NEES accelerometer bias
-        NEES_gyrobias = 0  # TODO: NEES gyroscope bias
+        NEES_all = d_x.T @ np.inv(P) @ d_x  # TODO: NEES all
+        NEES_pos = d_x[POS_IDX].T @ np.inv(P[POS_IDX,POS_IDX]) @ d_x[POS_IDX]  # TODO: NEES position
+        NEES_vel = d_x[VEL_IDX].T @ np.inv(P[VEL_IDX,VEL_IDX]) @ d_x[VEL_IDX]  # TODO: NEES velocity
+        NEES_att = d_x[ATT_IDX].T @ np.inv(P[ATT_IDX,ATT_IDX]) @ d_x[ATT_IDX]  # TODO: NEES attitude
+        NEES_accbias = d_x[ACC_BIAS_IDX].T @ np.inv(P[ACC_BIAS_IDX,ACC_BIAS_IDX]) @ d_x[ACC_BIAS_IDX]   # TODO: NEES accelerometer bias
+        NEES_gyrobias = d_x[GYRO_BIAS_IDX].T @ np.inv(P[GYRO_BIAS_IDX,GYRO_BIAS_IDX]) @ d_x[GYRO_BIAS_IDX]  # TODO: NEES gyroscope bias
 
         NEESes = np.array(
             [NEES_all, NEES_pos, NEES_vel, NEES_att, NEES_accbias, NEES_gyrobias]
@@ -739,7 +739,7 @@ class ESKF:
 
     @classmethod
     def _NEES(cls, diff, P):
-        NEES = 0  # TODO: NEES
+        NEES = diff.T @ P @ diff  # TODO: NEES
         assert NEES >= 0, "ESKF._NEES: negative NEES"
         return NEES
 
