@@ -398,12 +398,12 @@ class ESKF:
         gyro_bias = self.S_g @ x_nominal[GYRO_BIAS_IDX]
 
         # debias IMU measurements
-        acceleration = np.zeros((3,))
-        omega = np.zeros((3,))
+        acceleration = r_z_acc-acc_bias
+        omega = r_z_gyro-gyro_bias
 
         # perform prediction
-        x_nominal_predicted = np.zeros((16,))
-        P_predicted = np.zeros((15, 15))
+        x_nominal_predicted = self.predict_nominal(x_nominal,acceleration,omega,Ts)
+        P_predicted = self.predict_covariance(x_nominal,P,acceleration,omega,Ts)
 
         assert x_nominal_predicted.shape == (
             16,
@@ -449,15 +449,18 @@ class ESKF:
         DTX_IDX = POS_IDX + VEL_IDX + ERR_ACC_BIAS_IDX + ERR_GYRO_BIAS_IDX
 
         x_injected = x_nominal.copy()
-        # TODO: Inject error state into nominal state (except attitude / quaternion)
-        # TODO: Inject attitude
-        # TODO: Normalize quaternion
-
+        x_injected[INJ_IDX] += delta_x[DTX_IDX]
+        quat_injected = quaternion_product(ATT_IDX, np.array([1,(1/2)*delta_x[ATT_IDX].T]).T)
+        x_injected[ATT_IDX] = quat_injected/(la.norm(quat_injected,2))
         # Covariance
-        G_injected = np.zeros((1,))  # TODO: Compensate for injection in the covariances
+        G_injected = np.zeros((15,15))# TODO: Compensate for injection in the covariances
+        G_injected[0:6,0:6] = np.eye(6)
+        G_injected[6:9,6:9] = np.eye(6)-cross_product_matrix((1/2)*delta_x[ATT_IDX])
+        G_injected[9:15,9:15] = np.eye(6)
         P_injected = np.zeros(
             (15, 15)
         )  # TODO: Compensate for injection in the covariances
+        P_injected = P@G_injected@P.T
 
         assert x_injected.shape == (
             16,
