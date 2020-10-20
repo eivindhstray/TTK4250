@@ -289,7 +289,7 @@ class ESKF:
             30,
         ), f"ESKF.discrete_error_matrices: Van Loan matrix shape incorrect {V.shape}"
           # This can be slow...
-        VanLoanMatrix = np.eye(30)+V*Ts+0.5*np.matrix_power(V)*Ts**2
+        VanLoanMatrix = np.eye(30)+V*Ts+0.5*np.linalg.matrix_power(V,2)*Ts
         Ad = VanLoanMatrix[A_shape:,A_shape:].T
         GQGd = Ad@VanLoanMatrix[:A_shape,A_shape:]
 
@@ -578,7 +578,7 @@ class ESKF:
             x_nominal, P, z_GNSS_position, R_GNSS, lever_arm
         )
 
-        H = np.zeros((1,))  # TODO: measurement matrix
+        H = np.array([np.eye(3), np.zeros(3,13)])  # TODO: measurement matrix
 
         # in case of a specified lever arm
         if not np.allclose(lever_arm, 0):
@@ -586,12 +586,12 @@ class ESKF:
             H[:, ERR_ATT_IDX] = -R @ cross_product_matrix(lever_arm, debug=self.debug)
 
         # KF error state update
-        W = np.zeros((1,))  # TODO: Kalman gain
-        delta_x = np.zeros((15,))  # TODO: delta x
+        W = P @ H.T @ np.inv(H@P@H.T + R_GNSS)  # TODO: Kalman gain
+        delta_x = W@(z_GNSS_position - H@x_nominal)  # TODO: delta x
 
         Jo = I - W @ H  # for Joseph form
 
-        P_update = np.zeros((15, 15))  # TODO: P update
+        P_update = Jo@P  # TODO: P update
 
         # error state injection
         x_injected, P_injected = self.inject(x_nominal, delta_x, P_update)
@@ -650,7 +650,7 @@ class ESKF:
             x_nominal, P, z_GNSS_position, R_GNSS, lever_arm
         )
 
-        NIS = 0  # TODO: Calculate NIS
+        NIS = v.T @ np.inv(S) @ v  # TODO: Calculate NIS
 
         assert NIS >= 0, "EKSF.NIS_GNSS_positionNIS: NIS not positive"
 
@@ -678,8 +678,8 @@ class ESKF:
             16,
         ), f"ESKF.delta_x: x_true shape incorrect {x_true.shape}"
 
-        delta_position = np.zeros((3,))  # TODO: Delta position
-        delta_velocity = np.zeros((3,))  # TODO: Delta velocity
+        delta_position = x_nominal[POS_IDX] - x_true[POS_IDX]  # TODO: Delta position
+        delta_velocity = x_nominal[VEL_IDX] - x_true[VEL_IDX]  # TODO: Delta velocity
 
         quaternion_conj = np.array([1, 0, 0, 0])  # TODO: Conjugate of quaternion
 
