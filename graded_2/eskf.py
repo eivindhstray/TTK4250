@@ -114,14 +114,14 @@ class ESKF:
 
         R = quaternion_to_rotation_matrix(quaternion, debug=self.debug)
 
-        position_prediction = np.zeros((3,))  # TODO: Calculate predicted position
-        position_prediction += position+Ts*velocity + ((1/2)*Ts**2)*acceleration   # CROSSCHECK THIS
-        velocity_prediction = np.zeros((3,))  # TODO: Calculate predicted velocity
-        velocity_prediction += velocity+Ts*acceleration  #CROSSCHECK THIS
+        position_prediction = position+Ts*velocity + ((1/2)*Ts**2)*R@acceleration   # CROSSCHECK THIS
+        
+        velocity_prediction = velocity+Ts*R@acceleration  #CROSSCHECK THIS
+
         quaternion_prediction = np.array(
             [1, 0, 0, 0]
         )  # TODO: Calculate predicted quaternion
-        k = Ts*omega
+        k = Ts*R@omega
         k_norm_2 = la.norm(k,2)
         rhs_quat = np.array([np.cos(k_norm_2/2), np.sin(k_norm_2/2), (k.T)/k_norm_2]).T
         # Normalize quaternion
@@ -130,16 +130,15 @@ class ESKF:
 
         p_ab = self.p_acc
         p_wb = self.p_gyro
-        ##HELP!!
 
         acceleration_bias_prediction = np.zeros(
             (3,)
         )  # TODO: Calculate predicted acceleration bias
-        acceleration_bias_prediction += acceleration_bias - p_ab*(np.eye(3))@acceleration_bias*Ts
+        acceleration_bias_prediction += acceleration_bias * np.exp(-p_ab*np.eye(3)*Ts)
         gyroscope_bias_prediction = np.zeros(
             (3,)
         )  # TODO: Calculate predicted gyroscope bias
-        gyroscope_bias_prediction += gyroscope_bias - p_wb*(np.eye(3))@gyroscope_bias*Ts
+        gyroscope_bias_prediction += gyroscope_bias * np.exp(-p_wb*np.eye(3)*Ts)
         x_nominal_predicted = np.concatenate(
             (
                 position_prediction,
@@ -280,14 +279,19 @@ class ESKF:
         G = self.Gerr(x_nominal)
 
         V = np.zeros((30, 30))
+        A_shape = A.shape[0]
+        V[0:A_shape,0:A_shape] = -A
+        V[A_shape:,0:A_shape] = np.zeros((A_shape,A_shape))
+        V[A_shape:,A_shape:] = A.T
+        V[0:A_shape,A_shape:] = G@self.Q_err@G.T
         assert V.shape == (
             30,
             30,
-        ), f"ESKF.discrete_error_matrices: Van Loan matrix shape incorrect {omega.shape}"
-        VanLoanMatrix = la.expm(V)  # This can be slow...
-
-        Ad = np.zeros((15, 15))
-        GQGd = np.zeros((15, 15))
+        ), f"ESKF.discrete_error_matrices: Van Loan matrix shape incorrect {V.shape}"
+          # This can be slow...
+        VanLoanMatrix = np.eye(30)+V*Ts+0.5*np.matrix_power(V)*Ts**2
+        Ad = VanLoanMatrix[A_shape:,A_shape:].T
+        GQGd = Ad@VanLoanMatrix[:A_shape,A_shape:]
 
         assert Ad.shape == (
             15,
@@ -340,7 +344,9 @@ class ESKF:
 
         Ad, GQGd = self.discrete_error_matrices(x_nominal, acceleration, omega, Ts)
 
-        P_predicted = np.zeros((15, 15))
+        
+
+        P_predicted = Ad@P@Ad.T+GQGd
 
         assert P_predicted.shape == (
             15,
