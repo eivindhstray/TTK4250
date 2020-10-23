@@ -7,6 +7,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 try: # see if tqdm is available, otherwise define it as a dummy
     try: # Ipython seem to require different tqdm.. try..except seem to be the easiest way to check
         __IPYTHON__
@@ -33,6 +34,8 @@ from eskf import (
     ERR_ACC_BIAS_IDX,
     ERR_GYRO_BIAS_IDX,
 )
+
+import eskf
 
 from quaternion import quaternion_to_euler
 from cat_slice import CatSlice
@@ -180,7 +183,9 @@ P_pred[0][ERR_GYRO_BIAS_IDX ** 2] = np.eye(3)# TODO
 
 # %% Test: you can run this cell to test your implementation
 dummy = eskf.predict(x_pred[0], P_pred[0], z_acceleration[0], z_gyroscope[0], dt)
+
 dummy = eskf.update_GNSS_position(x_pred[0], P_pred[0], z_GNSS[0], R_GNSS, lever_arm)
+
 # %% Run estimation
 # run this file with 'python -O run_INS_simulated.py' to turn of assertions and get about 8/5 speed increase for longer runs
 
@@ -188,17 +193,18 @@ N: int = 500 # TODO: choose a small value to begin with (500?), and gradually in
 doGNSS: bool = True  # TODO: Set this to False if you want to check that the predictions make sense over reasonable time lenghts
 
 GNSSk: int = 0  # keep track of current step in GNSS measurements
-for k in tqdm.trange(N):
+for k in tqdm(range(N)):
     if doGNSS and timeIMU[k] >= timeGNSS[GNSSk]:
-        NIS[GNSSk] = eskf.NIS_GNSS_position(x_pred[k-1],P_pred[k-1],z_GNNS,R_GNSS)# TODO:
+        NIS[GNSSk] = eskf.NIS_GNSS_position(x_pred[k-1],P_pred[k-1],z_GNNS[k-1],R_GNSS)# TODO:
 
-        x_est[k], P_est[k] = eskf.predict(x_pred[k-1],P_pred[k-1],z_acceleration,z_gyroscope)# TODO:
+        x_est[k], P_est[k] = eskf.predict(x_pred[k-1],P_pred[k-1],z_acceleration[k-1],z_gyroscope)# TODO:
         assert np.all(np.isfinite(P_est[k])), f"Not finite P_pred at index {k}"
 
         GNSSk += 1
     else:
         # no updates, so let us take estimate = prediction
-        x_est[k] = eskf.predict_nominal(x_pred[k-1],z_acceleration[k-1],z_gyroscope[k-1])# TODO
+        
+        x_est[k] = eskf.predict_nominal(x_pred[k-1],z_acceleration[k-1],z_gyroscope[k-1],dt)# TODO
         P_est[k] = P_pred[k-1]# TODO
 
     delta_x[k] = eskf.delta_x(x_est[k], x_true[k])
