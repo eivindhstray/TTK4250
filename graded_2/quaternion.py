@@ -40,8 +40,8 @@ def quaternion_product(ql: np.ndarray, qr: np.ndarray) -> np.ndarray:
         )
 
     quaternion_product = np.zeros((4,1))  # TODO: Implement quaternion product
-    quaternion_product[0] = (eta_left*eta_right - (epsilon_left.T)@epsilon_right)
-    quaternion_product[1:] = (eta_left*epsilon_right +eta_right*epsilon_left + utils.cross_product_matrix(epsilon_left)@epsilon_right)
+    quaternion_product[0] = (eta_left*eta_right - (epsilon_left.T)@epsilon_right)[0]
+    quaternion_product[1:] = (eta_left*epsilon_right +eta_right*epsilon_left + utils.cross_product_matrix(epsilon_left)@epsilon_right)[0]
     
     # Ensure result is of correct shape
     quaternion_product = quaternion_product.ravel()
@@ -109,13 +109,12 @@ def quaternion_to_euler(quaternion: np.ndarray) -> np.ndarray:
         4,
     ), f"quaternion.quaternion_to_euler: Quaternion shape incorrect {quaternion.shape}"
 
-    quaternion_squared = quaternion ** 2
     eta = quaternion[0]
     e_1 = quaternion[1]
     e_2 = quaternion[2]
     e_3 = quaternion[3]
 
-    raise NotImplementedError  # TODO: remove when done
+    
     phi = np.arctan2(2*(e_3*e_2+eta*e_1),eta**2-e_1**2-e_2**2+e_3**2)  # TODO: Convert from quaternion to euler angles
     theta = np.arcsin(2*(eta*e_2-e_1*e_3))  # TODO: Convert from quaternion to euler angles
     psi = np.arctan2(2*(e_1*e_2+eta*e_3),eta**2+e_1**2-e_2**2-e_3**2)  # TODO: Convert from quaternion to euler angles
