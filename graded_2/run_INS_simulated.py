@@ -123,21 +123,21 @@ rate_std = 0.5 * cont_gyro_noise_std * np.sqrt(1 / dt)
 acc_std = 0.5 * cont_acc_noise_std * np.sqrt(1 / dt)
 
 # Bias values
-rate_bias_driving_noise_std = 5e-5
+rate_bias_driving_noise_std = 1
 cont_rate_bias_driving_noise_std = (
     (1 / 3) * rate_bias_driving_noise_std / np.sqrt(1 / dt)
 )
 
-acc_bias_driving_noise_std = 4e-3
+acc_bias_driving_noise_std = 0.1
 cont_acc_bias_driving_noise_std = 6 * acc_bias_driving_noise_std / np.sqrt(1 / dt)
 
 # Position and velocity measurement
-p_std = np.array([0.2, 0.2, 0.1])  # Measurement noise
+p_std = np.array([2, 2, 2])  # Measurement noise
 R_GNSS = np.diag(p_std ** 2)
 
-p_acc = 1e-14
+p_acc = 1e-8
 
-p_gyro = 1e-16
+p_gyro = 1e-10
 
 # %% Estimator
 eskf = ESKF(
@@ -428,6 +428,8 @@ gauss_compare_3  = np.sum(np.random.randn(3, N)**2, axis=0)
 axs6[2].boxplot([NEES_pos[0:N].T, NEES_vel[0:N].T, NEES_att[0:N].T, NEES_accbias[0:N].T, NEES_gyrobias[0:N].T, gauss_compare_3], notch=True)
 axs6[2].legend(['NEES pos', 'NEES vel', 'NEES att', 'NEES accbias', 'NEES gyrobias', 'gauss (3 dim)'])
 plt.grid()
-
+print("95% interval{}{}, NIS:{}".format(CI3[0],CI3[1],np.mean(NIS)))
+ 
 plt.show()
+
 # %%

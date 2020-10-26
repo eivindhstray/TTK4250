@@ -138,8 +138,8 @@ class ESKF:
 
        
         
-        acceleration_bias_prediction = acceleration_bias*np.exp((- Ts * p_ab)) #acceleration_bias*exp(-Ts*p_ab)
-        gyroscope_bias_prediction = gyroscope_bias*np.exp((- Ts * p_wb))
+        acceleration_bias_prediction = acceleration_bias*(1-Ts*p_ab)#acceleration_bias*np.exp((- Ts * p_ab)) #acceleration_bias*exp(-Ts*p_ab)
+        gyroscope_bias_prediction = gyroscope_bias*(1-Ts*p_wb)#gyroscope_bias*np.exp((- Ts * p_wb))
         
         x_nominal_predicted = np.concatenate(
             (
