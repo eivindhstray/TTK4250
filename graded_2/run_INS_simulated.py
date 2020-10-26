@@ -190,7 +190,7 @@ P_pred[0][ERR_GYRO_BIAS_IDX ** 2] = 0.01 * np.eye(3)
 # %% Run estimation
 # run this file with 'python -O run_INS_simulated.py' to turn of assertions and get about 8/5 speed increase for longer runs
 
-N: int = 5000
+N: int = 10000
 doGNSS: bool = True  # TODO: Set this to False if you want to check that the predictions make sense over reasonable time lenghts
 
 GNSSk: int = 0  # keep track of current step in GNSS measurements
