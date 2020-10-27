@@ -118,9 +118,7 @@ class ESKF:
         
         velocity_prediction = velocity+Ts*(R@acceleration+self.g)
 
-        quaternion_prediction = np.array(
-            [1, 0, 0, 0]
-        )  # TODO: Calculate predicted quaternion
+        
         k = Ts*R@omega
         
         k_norm_2 = la.norm(k,2)
