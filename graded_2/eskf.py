@@ -45,7 +45,7 @@ class ESKF:
     S_g: np.ndarray = np.eye(3)
     debug: bool = True
 
-    g: np.ndarray = np.array([0, 0, 9.82])  # Ja, i NED-land, der kan alt gå an
+    g: np.ndarray = np.array([0, 0, 9.81])  # Ja, i NED-land, der kan alt gå an
 
     Q_err: np.array = field(init=False, repr=False)
 
@@ -119,10 +119,10 @@ class ESKF:
         velocity_prediction = velocity+Ts*(R@acceleration+self.g)
 
         
-        k = Ts*R@omega
+        k = Ts*omega
         
         k_norm_2 = la.norm(k,2)
-        rhs_quat = np.block([np.cos(k_norm_2/2), *np.sin(k_norm_2/2)*(k.T)/k_norm_2])
+        rhs_quat = np.array([np.cos(k_norm_2/2), *np.sin(k_norm_2/2)*(k.T)/k_norm_2])
         rhs_quat = rhs_quat.T
        
         
@@ -226,7 +226,7 @@ class ESKF:
 
         R = quaternion_to_rotation_matrix(x_nominal[ATT_IDX], debug=self.debug)
 
-        G = np.vstack([np.zeros((3,12)), la.block_diag(-R,-np.eye(3),np.eye(3),np.eye(3))])
+        G = np.vstack([np.zeros((3,12)), la.block_diag(-R,-np.eye(3),np.eye(6))])
         
         assert G.shape == (15, 12), f"ESKF.Gerr: G-matrix shape incorrect {G.shape}"
         return G
@@ -276,8 +276,8 @@ class ESKF:
         ), f"ESKF.discrete_error_matrices: Van Loan matrix shape incorrect {V.shape}"
           # This can be slow...
         VanLoanMatrix = la.expm(V)
-        Ad = VanLoanMatrix[CatSlice(15,30)**2].T
-        GQGd = Ad @ VanLoanMatrix[CatSlice(0,15)*CatSlice(15,30)]
+        Ad = VanLoanMatrix[15:,15:].T
+        GQGd = Ad @ VanLoanMatrix[:15,15:]
 
         assert Ad.shape == (
             15,
@@ -436,7 +436,7 @@ class ESKF:
         x_injected = x_nominal.copy()
         x_injected[INJ_IDX] += delta_x[DTX_IDX]
 
-        quat_injected = quaternion_product(x_nominal[ATT_IDX], np.block([1,-delta_x[ERR_ATT_IDX]/2]))
+        quat_injected = quaternion_product(x_nominal[ATT_IDX], np.block([1,delta_x[ERR_ATT_IDX]/2]))
         x_injected[ATT_IDX] = quat_injected/(la.norm(quat_injected,2))
         # Covariance
 

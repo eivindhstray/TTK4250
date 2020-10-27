@@ -40,8 +40,8 @@ def quaternion_product(ql: np.ndarray, qr: np.ndarray) -> np.ndarray:
         )
 
     quaternion_product = np.zeros((4,1))  # TODO: Implement quaternion product
-    quaternion_product[0] = (eta_left*eta_right - (epsilon_left.T)@epsilon_right)[0]
-    quaternion_product[1:] = (eta_left*epsilon_right +eta_right*epsilon_left + utils.cross_product_matrix(epsilon_left)@epsilon_right)[0]
+    quaternion_product[0] = (eta_left*eta_right - (epsilon_left.T)@epsilon_right)
+    quaternion_product[1:] = (eta_left*epsilon_right +eta_right*epsilon_left + utils.cross_product_matrix(epsilon_left)@epsilon_right)
     
     # Ensure result is of correct shape
     quaternion_product = quaternion_product.ravel()

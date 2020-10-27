@@ -5,16 +5,17 @@ import scipy.stats
 
 import matplotlib
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 import numpy as np
 
-
+import pickle
 
 try: # see if tqdm is available, otherwise define it as a dummy
     try: # Ipython seem to require different tqdm.. try..except seem to be the easiest way to check
         __IPYTHON__
-        from tqdm.notebook import tqdm
+        import tqdm
     except:
-        from tqdm import tqdm
+        import tqdm
 except Exception as e:
     print(e)
     print(
@@ -35,8 +36,6 @@ from eskf import (
     ERR_ACC_BIAS_IDX,
     ERR_GYRO_BIAS_IDX,
 )
-
-import eskf
 
 from quaternion import quaternion_to_euler
 from cat_slice import CatSlice
@@ -106,6 +105,7 @@ z_acceleration = loaded_data["zAcc"].T
 z_GNSS = loaded_data["zGNSS"].T
 z_gyroscope = loaded_data["zGyro"].T
 
+Ts_IMU = [0, *np.diff(timeIMU)]
 
 dt = np.mean(np.diff(timeIMU))
 steps = len(z_acceleration)
@@ -119,13 +119,13 @@ cont_gyro_noise_std = 4.36e-5  # (rad/s)/sqrt(Hz)
 cont_acc_noise_std = 1.167e-3  # (m/s**2)/sqrt(Hz)
 
 # Discrete sample noise at simulation rate used
-rate_std = 0.5 * cont_gyro_noise_std * np.sqrt(1 / dt)
+rate_std = 0.5 * cont_gyro_noise_std * np.sqrt(1 / dt) # Hvorfor gange med en halv? (eq. 10.70)
 acc_std = 0.5 * cont_acc_noise_std * np.sqrt(1 / dt)
 
 # Bias values
 rate_bias_driving_noise_std = 5e-5
 cont_rate_bias_driving_noise_std = (
-    (1 / 3) * rate_bias_driving_noise_std / np.sqrt(1 / dt)
+    (1/3) * rate_bias_driving_noise_std / np.sqrt(1 / dt)
 )
 
 acc_bias_driving_noise_std = 4e-3
@@ -136,7 +136,6 @@ p_std = np.array([0.3, 0.3, 0.5])  # Measurement noise
 R_GNSS = np.diag(p_std ** 2)
 
 p_acc = 1e-16
-
 p_gyro = 1e-16
 
 # %% Estimator
@@ -177,24 +176,20 @@ x_pred[0, 6] = 1  # no initial rotation: nose to North, right to East, and belly
 
 # These have to be set reasonably to get good results
 P_pred[0][POS_IDX ** 2] = 10**2 * np.eye(3)
-P_pred[0][VEL_IDX ** 2] = 10**2 * np.eye(3)
-P_pred[0][ERR_ATT_IDX ** 2] = np.eye(3)
-P_pred[0][ERR_ACC_BIAS_IDX ** 2] = 0.01 * np.eye(3)
-P_pred[0][ERR_GYRO_BIAS_IDX ** 2] = 0.01 * np.eye(3)
-
-# %% Test: you can run this cell to test your implementation
-#dummy = eskf.predict(x_pred[0], P_pred[0], z_acceleration[0], z_gyroscope[0], dt)
-
-#dummy = eskf.update_GNSS_position(x_pred[0], P_pred[0], z_GNSS[0], R_GNSS, lever_arm)
+P_pred[0][VEL_IDX ** 2] = 2**2 * np.eye(3)
+P_pred[0][ERR_ATT_IDX ** 2] = 0.01*np.eye(3)
+P_pred[0][ERR_ACC_BIAS_IDX ** 2] = 0.03 * np.eye(3)
+P_pred[0][ERR_GYRO_BIAS_IDX ** 2] = 0.0005* np.eye(3)
 
 # %% Run estimation
 # run this file with 'python -O run_INS_simulated.py' to turn of assertions and get about 8/5 speed increase for longer runs
 
+
 N: int = 5000
-doGNSS: bool = True  # TODO: Set this to False if you want to check that the predictions make sense over reasonable time lenghts
+doGNSS: bool = True # TODO: Set this to False if you want to check that the predictions make sense over reasonable time lenghts
 
 GNSSk: int = 0  # keep track of current step in GNSS measurements
-for k in tqdm(range(N)):
+for k in tqdm.trange(N):
     if doGNSS and timeIMU[k] >= timeGNSS[GNSSk]:
         NIS[GNSSk] = eskf.NIS_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
 
@@ -218,10 +213,11 @@ for k in tqdm(range(N)):
     ) = eskf.NEESes(x_est[k], P_est[k], x_true[k])
 
     if k < N - 1:
-        x_pred[k + 1], P_pred[k + 1] = eskf.predict(x_est[k], P_est[k], z_acceleration[k+1], z_gyroscope[k+1], Ts = timeIMU[k+1]-timeIMU[k])
+        x_pred[k + 1], P_pred[k + 1] = eskf.predict(x_est[k], P_est[k], z_acceleration[k+1], z_gyroscope[k+1], Ts_IMU[k+1])
 
     if eskf.debug:
         assert np.all(np.isfinite(P_pred[k])), f"Not finite P_pred at index {k + 1}"
+
 
 # %% Plots
 
@@ -328,7 +324,7 @@ axs3[4].legend(
 )
 
 fig3.suptitle("States estimate errors")
-
+'''
 # Error distance plot
 fig4, axs4 = plt.subplots(2, 1, num=4, clear=True)
 
@@ -349,7 +345,7 @@ axs4[1].plot(t, np.linalg.norm(delta_x[:N, VEL_IDX], axis=1))
 axs4[1].set(ylabel="Speed error [m/s]")
 axs4[1].legend([f"RMSE: {np.sqrt(np.mean(np.sum(delta_x[:N, VEL_IDX]**2, axis=0)))}"])
 
-
+'''
 # %% Consistency
 confprob = 0.95
 CI15 = np.array(scipy.stats.chi2.interval(confprob, 15)).reshape((2, 1))
@@ -404,7 +400,7 @@ axs5[5].set(
     title=f"Gyro bias NEES ({100 *  insideCI:.1f} inside {100 * confprob} confidence interval)"
 )
 axs5[5].set_ylim([0, 20])
-
+'''
 axs5[6].plot(NIS[:GNSSk])
 axs5[6].plot(np.array([0, N - 1]) * dt, (CI3 @ np.ones((1, 2))).T)
 insideCI = np.mean((CI3[0] <= NIS) * (NIS <= CI3[1]))
@@ -415,7 +411,6 @@ axs5[6].set_ylim([0, 20])
 
 # boxplot
 fig6, axs6 = plt.subplots(1, 3)
-
 gauss_compare = np.sum(np.random.randn(3, GNSSk)**2, axis=0)
 axs6[0].boxplot([NIS[0:GNSSk], gauss_compare], notch=True)
 axs6[0].legend(['NIS', 'gauss'])
@@ -430,6 +425,7 @@ gauss_compare_3  = np.sum(np.random.randn(3, N)**2, axis=0)
 axs6[2].boxplot([NEES_pos[0:N].T, NEES_vel[0:N].T, NEES_att[0:N].T, NEES_accbias[0:N].T, NEES_gyrobias[0:N].T, gauss_compare_3], notch=True)
 axs6[2].legend(['NEES pos', 'NEES vel', 'NEES att', 'NEES accbias', 'NEES gyrobias', 'gauss (3 dim)'])
 plt.grid()
+'''
 print("95% interval{}{}, NIS:{}".format(CI3[0],CI3[1],np.mean(NIS)))
  
 plt.show()
