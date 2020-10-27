@@ -123,21 +123,21 @@ rate_std = 0.5 * cont_gyro_noise_std * np.sqrt(1 / dt)
 acc_std = 0.5 * cont_acc_noise_std * np.sqrt(1 / dt)
 
 # Bias values
-rate_bias_driving_noise_std = 1
+rate_bias_driving_noise_std = 5e-5
 cont_rate_bias_driving_noise_std = (
     (1 / 3) * rate_bias_driving_noise_std / np.sqrt(1 / dt)
 )
 
-acc_bias_driving_noise_std = 0.1
+acc_bias_driving_noise_std = 4e-3
 cont_acc_bias_driving_noise_std = 6 * acc_bias_driving_noise_std / np.sqrt(1 / dt)
 
 # Position and velocity measurement
-p_std = np.array([2, 2, 2])  # Measurement noise
+p_std = np.array([0.3, 0.3, 0.5])  # Measurement noise
 R_GNSS = np.diag(p_std ** 2)
 
-p_acc = 1e-8
+p_acc = 1e-16
 
-p_gyro = 1e-10
+p_gyro = 1e-16
 
 # %% Estimator
 eskf = ESKF(
@@ -228,11 +228,13 @@ for k in tqdm(range(N)):
 fig1 = plt.figure(1)
 ax = plt.axes(projection="3d")
 
-ax.plot3D(x_est[:N, 1], x_est[:N, 0], -x_est[:N, 2])
-ax.plot3D(z_GNSS[:GNSSk, 1], z_GNSS[:GNSSk, 0], -z_GNSS[:GNSSk, 2])
+ax.plot3D(x_est[:N, 1], x_est[:N, 0], -x_est[:N, 2],label = r"$\hat{x}$")
+ax.plot3D(z_GNSS[:GNSSk, 1], z_GNSS[:GNSSk, 0], -z_GNSS[:GNSSk, 2],label = "z_GNSS")
+ax.plot3D(x_true[:N, 1], x_true[:N, 0], -x_true[:N, 2],label = "x_true")
 ax.set_xlabel("East [m]")
 ax.set_ylabel("North [m]")
 ax.set_zlabel("Altitude [m]")
+ax.legend()
 
 
 # state estimation
