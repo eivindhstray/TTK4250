@@ -105,7 +105,7 @@ z_acceleration = loaded_data["zAcc"].T
 z_GNSS = loaded_data["zGNSS"].T
 z_gyroscope = loaded_data["zGyro"].T
 
-Ts_IMU = [0, *np.diff(timeIMU)]
+Ts = [0, *np.diff(timeIMU)]
 
 dt = np.mean(np.diff(timeIMU))
 steps = len(z_acceleration)
@@ -185,7 +185,7 @@ P_pred[0][ERR_GYRO_BIAS_IDX ** 2] = 0.0005* np.eye(3)
 # run this file with 'python -O run_INS_simulated.py' to turn of assertions and get about 8/5 speed increase for longer runs
 
 
-N: int = 5000
+N: int = 15000
 doGNSS: bool = True # TODO: Set this to False if you want to check that the predictions make sense over reasonable time lenghts
 
 GNSSk: int = 0  # keep track of current step in GNSS measurements
@@ -213,7 +213,7 @@ for k in tqdm.trange(N):
     ) = eskf.NEESes(x_est[k], P_est[k], x_true[k])
 
     if k < N - 1:
-        x_pred[k + 1], P_pred[k + 1] = eskf.predict(x_est[k], P_est[k], z_acceleration[k+1], z_gyroscope[k+1], Ts_IMU[k+1])
+        x_pred[k + 1], P_pred[k + 1] = eskf.predict(x_est[k], P_est[k], z_acceleration[k+1], z_gyroscope[k+1], Ts[k+1])
 
     if eskf.debug:
         assert np.all(np.isfinite(P_pred[k])), f"Not finite P_pred at index {k + 1}"

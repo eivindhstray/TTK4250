@@ -176,7 +176,7 @@ P_pred[0][ERR_GYRO_BIAS_IDX**2] = (1e-3)**2 * np.eye(3)
 # Position and velocity measurement
 
 
-N = steps
+N = 100000
 GNSSk = 0
 
 for k in tqdm(range(N)):
