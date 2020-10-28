@@ -119,7 +119,7 @@ cont_gyro_noise_std = 4.36e-5  # (rad/s)/sqrt(Hz)
 cont_acc_noise_std = 1.167e-3  # (m/s**2)/sqrt(Hz)
 
 # Discrete sample noise at simulation rate used
-rate_std = 0.5 * cont_gyro_noise_std * np.sqrt(1 / dt) # Hvorfor gange med en halv? (eq. 10.70)
+rate_std = 0.5 * cont_gyro_noise_std * np.sqrt(1 / dt) 
 acc_std = 0.5 * cont_acc_noise_std * np.sqrt(1 / dt)
 
 # Bias values
@@ -185,7 +185,7 @@ P_pred[0][ERR_GYRO_BIAS_IDX ** 2] = 0.0005* np.eye(3)
 # run this file with 'python -O run_INS_simulated.py' to turn of assertions and get about 8/5 speed increase for longer runs
 
 
-N: int = 15000
+N: int = steps
 doGNSS: bool = True # TODO: Set this to False if you want to check that the predictions make sense over reasonable time lenghts
 
 GNSSk: int = 0  # keep track of current step in GNSS measurements
@@ -324,20 +324,20 @@ axs3[4].legend(
 )
 
 fig3.suptitle("States estimate errors")
-'''
+
 # Error distance plot
 fig4, axs4 = plt.subplots(2, 1, num=4, clear=True)
 
 axs4[0].plot(t, np.linalg.norm(delta_x[:N, POS_IDX], axis=1))
 axs4[0].plot(
     np.arange(0, N, 100) * dt,
-    np.linalg.norm(x_true[99:100:N, :3] - z_GNSS[:GNSSk], axis=1),
+    np.linalg.norm(x_true[99:N:100, :3] - z_GNSS[:GNSSk], axis=1),
 )
 axs4[0].set(ylabel="Position error [m]")
 axs4[0].legend(
     [
         f"Estimation error ({np.sqrt(np.mean(np.sum(delta_x[:N, POS_IDX]**2, axis=1)))})",
-        f"Measurement error ({np.sqrt(np.mean(np.sum((x_true[99:100:N, POS_IDX] - z_GNSS[GNSSk - 1])**2, axis=1)))})",
+        f"Measurement error ({np.sqrt(np.mean(np.sum((x_true[99:N:100, POS_IDX] - z_GNSS[GNSSk - 1])**2, axis=1)))})",
     ]
 )
 
@@ -345,7 +345,7 @@ axs4[1].plot(t, np.linalg.norm(delta_x[:N, VEL_IDX], axis=1))
 axs4[1].set(ylabel="Speed error [m/s]")
 axs4[1].legend([f"RMSE: {np.sqrt(np.mean(np.sum(delta_x[:N, VEL_IDX]**2, axis=0)))}"])
 
-'''
+
 # %% Consistency
 confprob = 0.95
 CI15 = np.array(scipy.stats.chi2.interval(confprob, 15)).reshape((2, 1))
@@ -400,7 +400,7 @@ axs5[5].set(
     title=f"Gyro bias NEES ({100 *  insideCI:.1f} inside {100 * confprob} confidence interval)"
 )
 axs5[5].set_ylim([0, 20])
-'''
+
 axs5[6].plot(NIS[:GNSSk])
 axs5[6].plot(np.array([0, N - 1]) * dt, (CI3 @ np.ones((1, 2))).T)
 insideCI = np.mean((CI3[0] <= NIS) * (NIS <= CI3[1]))
@@ -425,8 +425,8 @@ gauss_compare_3  = np.sum(np.random.randn(3, N)**2, axis=0)
 axs6[2].boxplot([NEES_pos[0:N].T, NEES_vel[0:N].T, NEES_att[0:N].T, NEES_accbias[0:N].T, NEES_gyrobias[0:N].T, gauss_compare_3], notch=True)
 axs6[2].legend(['NEES pos', 'NEES vel', 'NEES att', 'NEES accbias', 'NEES gyrobias', 'gauss (3 dim)'])
 plt.grid()
-'''
-print("95% interval{}{}, NIS:{}".format(CI3[0],CI3[1],np.mean(NIS)))
+
+print("95% interval{}{}, Average NIS:{}".format(CI3[0],CI3[1],np.mean(NIS)))
  
 plt.show()
 
