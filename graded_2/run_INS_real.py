@@ -156,8 +156,8 @@ x_pred = np.zeros((steps, 16))
 P_pred = np.zeros((steps, 15, 15))
 
 NIS = np.zeros(gnss_steps)
-NIS_altitude = np.zeros(gnss_steps) #TODO separate
-NIS_planar = np.zeros(gnss_steps) #TODO separate
+NIS_altitude = np.zeros(gnss_steps) #TODO separate DONE
+NIS_planar = np.zeros(gnss_steps) #TODO separate DONE
 
 # %% Initialise
 x_pred[0, POS_IDX] = np.array([0, 0, -5]) # starting 5 metres above ground
@@ -168,10 +168,10 @@ x_pred[0, ATT_IDX] = np.array([
     np.sin(45 * np.pi / 180)
 ])  # nose to east, right to south and belly down.
 
-P_pred[0][POS_IDX**2] = 10**2 * np.eye(3)
-P_pred[0][VEL_IDX**2] = 3**2 * np.eye(3)
+P_pred[0][POS_IDX**2] = 1**2 * np.eye(3)
+P_pred[0][VEL_IDX**2] = 0.5**2 * np.eye(3)
 P_pred[0][ERR_ATT_IDX**2] = (np.pi/30)**2 * np.eye(3) # error rotation vector (not quat)
-P_pred[0][ERR_ACC_BIAS_IDX**2] = 0.05**2 * np.eye(3)
+P_pred[0][ERR_ACC_BIAS_IDX**2] = 0.005**2 * np.eye(3)
 P_pred[0][ERR_GYRO_BIAS_IDX**2] = (1e-3)**2 * np.eye(3)
 
 # %% Run estimation
