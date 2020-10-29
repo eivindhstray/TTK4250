@@ -157,7 +157,7 @@ P_pred = np.zeros((steps, 15, 15))
 
 NIS = np.zeros(gnss_steps)
 NIS_altitude = np.zeros(gnss_steps) #TODO separate
-NIS_horisontal = np.zeros(gnss_steps) #TODO separate
+NIS_planar = np.zeros(gnss_steps) #TODO separate
 
 # %% Initialise
 x_pred[0, POS_IDX] = np.array([0, 0, -5]) # starting 5 metres above ground
@@ -186,7 +186,7 @@ for k in tqdm(range(N)):
         #R_GNSS = # TODO: Current GNSS covariance
         p_std = (accuracy_GNSS[GNSSk]**2)*np.array([0.3,0.3,0.5])
         R_GNSS = 0.1*np.diag(p_std)
-        NIS[GNSSk] = eskf.NIS_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
+        NIS[GNSSk],NIS_planar[GNSSk],NIS_altitude[GNSSk] = eskf.NIS_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
         x_est[k], P_est[k] = eskf.update_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
         if eskf.debug:
             assert np.all(np.isfinite(P_est[k])), f"Not finite P_pred at index {k}"
@@ -209,11 +209,12 @@ for k in tqdm(range(N)):
 fig1 = plt.figure(1)
 ax = plt.axes(projection='3d')
 
-ax.plot3D(x_est[0:N, 1], x_est[0:N, 0], -x_est[0:N, 2])
-ax.plot3D(z_GNSS[0:N, 1], z_GNSS[0:N, 0], -z_GNSS[0:N, 2])
+ax.plot3D(x_est[0:N, 1], x_est[0:N, 0], -x_est[0:N, 2],label = r"$\hat{x}$")
+ax.plot3D(z_GNSS[0:N, 1], z_GNSS[0:N, 0], -z_GNSS[0:N, 2], label = "z_GNSS")
 ax.set_xlabel('East [m]')
 ax.set_xlabel('North [m]')
 ax.set_xlabel('Altitude [m]')
+ax.legend()
 
 plt.grid()
 
@@ -269,6 +270,37 @@ gauss_compare = np.sum(np.random.randn(3, GNSSk)**2, axis=0)
 plt.boxplot([NIS[0:GNSSk], gauss_compare], notch=True)
 plt.legend('NIS', 'gauss')
 plt.grid()
+
+# %% Decoupled NISes
+
+confprob = 0.95
+CI15 = np.array(scipy.stats.chi2.interval(confprob, 15)).reshape((2, 1))
+CI3 = np.array(scipy.stats.chi2.interval(confprob, 3)).reshape((2, 1))
+
+fig5, axs5 = plt.subplots(3, 1, num=5, clear=True)
+
+axs5[0].plot(NIS_planar[:GNSSk])
+axs5[0].plot(np.array([0, N - 1]) * dt, (CI3 @ np.ones((1, 2))).T)
+insideCI = np.mean((CI3[0] <= NIS_planar) * (NIS_planar <= CI3[1]))
+axs5[0].set(
+    title=f"NIS_planar ({100 *  insideCI:.1f} inside {100 * confprob} confidence interval)"
+)
+axs5[0].set_ylim([0, 20])
+axs5[1].plot(NIS_altitude[:GNSSk])
+axs5[1].plot(np.array([0, N - 1]) * dt, (CI3 @ np.ones((1, 2))).T)
+insideCI = np.mean((CI3[0] <= NIS_altitude) * (NIS_altitude <= CI3[1]))
+axs5[1].set(
+    title=f"NIS_altitude ({100 *  insideCI:.1f} inside {100 * confprob} confidence interval)"
+)
+axs5[1].set_ylim([0, 20])
+
+axs5[2].plot(NIS[:GNSSk])
+axs5[2].plot(np.array([0, N - 1]) * dt, (CI3 @ np.ones((1, 2))).T)
+insideCI = np.mean((CI3[0] <= NIS) * (NIS <= CI3[1]))
+axs5[2].set(
+    title=f"NIS ({100 *  insideCI:.1f} inside {100 * confprob} confidence interval)"
+)
+axs5[2].set_ylim([0, 20])
 
 print("95% interval{}{}, Average NIS:{}".format(CI3[0],CI3[1],np.mean(NIS[0:GNSSk])))
 

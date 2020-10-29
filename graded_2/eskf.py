@@ -276,7 +276,7 @@ class ESKF:
         ), f"ESKF.discrete_error_matrices: Van Loan matrix shape incorrect {V.shape}"
           # This can be slow...
         #VanLoanMatrix = la.expm(V*Ts)
-        VanLoanMatrix = np.eye(30)+V*Ts+0.5*(V@V)*Ts**2
+        VanLoanMatrix = np.eye(30)+V*Ts+0.5*(V@V)*Ts**2 #speed things up with less accurate calculations!
         Ad = VanLoanMatrix[15:,15:].T
         GQGd = Ad @ VanLoanMatrix[:15,15:]
 
@@ -631,10 +631,12 @@ class ESKF:
         )
 
         NIS = v.T @ la.solve(S,v)  # TODO: Calculate NIS
-
+        NIS_planar = v[:2].T@la.solve(S[0:2,0:2],v[:2])
+        NIS_altitude = v[2]*S[2,2]*v[2]
         assert NIS >= 0, "EKSF.NIS_GNSS_positionNIS: NIS not positive"
-
-        return NIS
+        assert NIS_altitude >= 0, "NIS_altitude negative"
+        assert NIS_planar >= 0, "NIS_planar negative"
+        return NIS,NIS_planar,NIS_altitude
 
     @classmethod
     def delta_x(cls, x_nominal: np.ndarray, x_true: np.ndarray,) -> np.ndarray:
