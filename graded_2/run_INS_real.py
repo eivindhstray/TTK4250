@@ -130,7 +130,7 @@ acc_bias_driving_noise_std = 4e-3# TODO
 cont_acc_bias_driving_noise_std = acc_bias_driving_noise_std/np.sqrt(1/dt)
 
 # Position and velocity measurement
-p_acc = 1e-14
+p_acc = 1e-16
 
 p_gyro = 1e-16
 
@@ -144,7 +144,7 @@ eskf = ESKF(
     p_gyro,
     S_a = S_a, # set the accelerometer correction matrix
     S_g = S_g, # set the gyro correction matrix,
-    debug=True # False to avoid expensive debug checks
+    debug=False # False to avoid expensive debug checks
 )
 
 
@@ -158,7 +158,7 @@ P_pred = np.zeros((steps, 15, 15))
 NIS = np.zeros(gnss_steps)
 
 # %% Initialise
-x_pred[0, POS_IDX] = np.array([0, 0, 0]) # starting 5 metres above ground
+x_pred[0, POS_IDX] = np.array([0, 0, -5]) # starting 5 metres above ground
 x_pred[0, VEL_IDX] = np.array([0, 0, 0]) # starting at 20 m/s due north
 x_pred[0, ATT_IDX] = np.array([
     np.cos(45 * np.pi / 180),
@@ -176,14 +176,14 @@ P_pred[0][ERR_GYRO_BIAS_IDX**2] = (1e-3)**2 * np.eye(3)
 # Position and velocity measurement
 
 
-N = 75000
+N = steps
 GNSSk = 0
 
 for k in tqdm(range(N)):
     if timeIMU[k] >= timeGNSS[GNSSk]:
         #R_GNSS = # TODO: Current GNSS covariance
-        p_std = np.array([0.2, 0.2, 0.1])  # Measurement noise just to make script run the first time around
-        R_GNSS = np.diag(p_std ** 2)
+        p_std = (accuracy_GNSS[GNSSk]**2)*np.array([0.3,0.3,0.5])
+        R_GNSS = 0.1*np.diag(p_std)
         NIS[GNSSk] = eskf.NIS_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
 
         x_est[k], P_est[k] = eskf.update_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
@@ -268,6 +268,8 @@ gauss_compare = np.sum(np.random.randn(3, GNSSk)**2, axis=0)
 plt.boxplot([NIS[0:GNSSk], gauss_compare], notch=True)
 plt.legend('NIS', 'gauss')
 plt.grid()
+
+print("95% interval{}{}, Average NIS:{}".format(CI3[0],CI3[1],np.mean(NIS[0:GNSSk])))
 
 plt.show()
 # %%

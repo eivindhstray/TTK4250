@@ -95,8 +95,14 @@ except Exception as e:
 filename_to_load = "task_simulation.mat"
 loaded_data = scipy.io.loadmat(filename_to_load)
 
-S_a = loaded_data["S_a"]
-S_g = loaded_data["S_g"]
+doCorrections = True
+
+if doCorrections:
+
+    S_a = loaded_data["S_a"]
+    S_g = loaded_data["S_g"]
+else:
+    S_a = S_g = np.eye(3)
 lever_arm = loaded_data["leverarm"].ravel()
 timeGNSS = loaded_data["timeGNSS"].ravel()
 timeIMU = loaded_data["timeIMU"].ravel()
@@ -115,6 +121,8 @@ gnss_steps = len(z_GNSS)
 # IMU noise values for STIM300, based on datasheet and simulation sample rate
 # Continous noise
 # TODO: What to remove here?
+#cont_acc_noise_std = 0.06/3600
+#cont_gyro_noise_std = 0.0225 # Freq = 1Hz
 cont_gyro_noise_std = 4.36e-5  # (rad/s)/sqrt(Hz)
 cont_acc_noise_std = 1.167e-3  # (m/s**2)/sqrt(Hz)
 
@@ -148,7 +156,7 @@ eskf = ESKF(
     p_gyro,
     S_a=S_a, # set the accelerometer correction matrix
     S_g=S_g, # set the gyro correction matrix,
-    debug=True # TODO: False to avoid expensive debug checks, can also be suppressed by calling 'python -O run_INS_simulated.py'
+    debug=False # TODO: False to avoid expensive debug checks, can also be suppressed by calling 'python -O run_INS_simulated.py'
 )
 
 # %% Allocate
@@ -175,8 +183,8 @@ x_pred[0, VEL_IDX] = np.array([20, 0, 0])  # starting at 20 m/s due north
 x_pred[0, 6] = 1  # no initial rotation: nose to North, right to East, and belly down
 
 # These have to be set reasonably to get good results
-P_pred[0][POS_IDX ** 2] = 10**2 * np.eye(3)
-P_pred[0][VEL_IDX ** 2] = 2**2 * np.eye(3)
+P_pred[0][POS_IDX ** 2] = 2.5**2 * np.eye(3)
+P_pred[0][VEL_IDX ** 2] = 1**2 * np.eye(3)
 P_pred[0][ERR_ATT_IDX ** 2] = 0.01*np.eye(3)
 P_pred[0][ERR_ACC_BIAS_IDX ** 2] = 0.03 * np.eye(3)
 P_pred[0][ERR_GYRO_BIAS_IDX ** 2] = 0.0005* np.eye(3)
@@ -326,24 +334,25 @@ axs3[4].legend(
 fig3.suptitle("States estimate errors")
 
 # Error distance plot
-fig4, axs4 = plt.subplots(2, 1, num=4, clear=True)
+if doGNSS:
+    fig4, axs4 = plt.subplots(2, 1, num=4, clear=True)
 
-axs4[0].plot(t, np.linalg.norm(delta_x[:N, POS_IDX], axis=1))
-axs4[0].plot(
-    np.arange(0, N, 100) * dt,
-    np.linalg.norm(x_true[99:N:100, :3] - z_GNSS[:GNSSk], axis=1),
-)
-axs4[0].set(ylabel="Position error [m]")
-axs4[0].legend(
-    [
-        f"Estimation error ({np.sqrt(np.mean(np.sum(delta_x[:N, POS_IDX]**2, axis=1)))})",
-        f"Measurement error ({np.sqrt(np.mean(np.sum((x_true[99:N:100, POS_IDX] - z_GNSS[GNSSk - 1])**2, axis=1)))})",
-    ]
-)
+    axs4[0].plot(t, np.linalg.norm(delta_x[:N, POS_IDX], axis=1))
+    axs4[0].plot(
+        np.arange(0, N, 100) * dt,
+        np.linalg.norm(x_true[99:N:100, :3] - z_GNSS[:GNSSk], axis=1),
+    )
+    axs4[0].set(ylabel="Position error [m]")
+    axs4[0].legend(
+        [
+            f"Estimation error ({np.sqrt(np.mean(np.sum(delta_x[:N, POS_IDX]**2, axis=1)))})",
+            f"Measurement error ({np.sqrt(np.mean(np.sum((x_true[99:N:100, POS_IDX] - z_GNSS[GNSSk - 1])**2, axis=1)))})",
+        ]
+    )
 
-axs4[1].plot(t, np.linalg.norm(delta_x[:N, VEL_IDX], axis=1))
-axs4[1].set(ylabel="Speed error [m/s]")
-axs4[1].legend([f"RMSE: {np.sqrt(np.mean(np.sum(delta_x[:N, VEL_IDX]**2, axis=0)))}"])
+    axs4[1].plot(t, np.linalg.norm(delta_x[:N, VEL_IDX], axis=1))
+    axs4[1].set(ylabel="Speed error [m/s]")
+    axs4[1].legend([f"RMSE: {np.sqrt(np.mean(np.sum(delta_x[:N, VEL_IDX]**2, axis=0)))}"])
 
 
 # %% Consistency
@@ -355,7 +364,7 @@ fig5, axs5 = plt.subplots(7, 1, num=5, clear=True)
 
 axs5[0].plot(t, (NEES_all[:N]).T)
 axs5[0].plot(np.array([0, N - 1]) * dt, (CI15 @ np.ones((1, 2))).T)
-insideCI = np.mean((CI15[0] <= NEES_all) * (NEES_all <= CI15[1]))
+insideCI = np.mean((CI15[0] <= NEES_all[:N]) * (NEES_all[:N] <= CI15[1]))
 axs5[0].set(
     title=f"Total NEES ({100 *  insideCI:.1f} inside {100 * confprob} confidence interval)"
 )
@@ -401,32 +410,36 @@ axs5[5].set(
 )
 axs5[5].set_ylim([0, 20])
 
-axs5[6].plot(NIS[:GNSSk])
-axs5[6].plot(np.array([0, N - 1]) * dt, (CI3 @ np.ones((1, 2))).T)
-insideCI = np.mean((CI3[0] <= NIS) * (NIS <= CI3[1]))
-axs5[6].set(
-    title=f"NIS ({100 *  insideCI:.1f} inside {100 * confprob} confidence interval)"
-)
-axs5[6].set_ylim([0, 20])
 
-# boxplot
-fig6, axs6 = plt.subplots(1, 3)
-gauss_compare = np.sum(np.random.randn(3, GNSSk)**2, axis=0)
-axs6[0].boxplot([NIS[0:GNSSk], gauss_compare], notch=True)
-axs6[0].legend(['NIS', 'gauss'])
-plt.grid()
+if doGNSS:
+    axs5[6].plot(NIS[:GNSSk])
+    axs5[6].plot(np.array([0, N - 1]) * dt, (CI3 @ np.ones((1, 2))).T)
+    insideCI = np.mean((CI3[0] <= NIS) * (NIS <= CI3[1]))
+    axs5[6].set(
+        title=f"NIS ({100 *  insideCI:.1f} inside {100 * confprob} confidence interval)"
+    )
+    axs5[6].set_ylim([0, 20])
 
-gauss_compare_15 = np.sum(np.random.randn(15, N)**2, axis=0)
-axs6[1].boxplot([NEES_all[0:N].T, gauss_compare_15], notch=True)
-axs6[1].legend(['NEES', 'gauss (15 dim)'])
-plt.grid()
+    # boxplot
+    fig6, axs6 = plt.subplots(1, 3)
+    gauss_compare = np.sum(np.random.randn(3, GNSSk)**2, axis=0)
+    axs6[0].boxplot([NIS[0:GNSSk], gauss_compare], notch=True)
+    axs6[0].legend(['NIS', 'gauss'])
+    plt.grid()
 
-gauss_compare_3  = np.sum(np.random.randn(3, N)**2, axis=0)
-axs6[2].boxplot([NEES_pos[0:N].T, NEES_vel[0:N].T, NEES_att[0:N].T, NEES_accbias[0:N].T, NEES_gyrobias[0:N].T, gauss_compare_3], notch=True)
-axs6[2].legend(['NEES pos', 'NEES vel', 'NEES att', 'NEES accbias', 'NEES gyrobias', 'gauss (3 dim)'])
-plt.grid()
+    gauss_compare_15 = np.sum(np.random.randn(15, N)**2, axis=0)
+    axs6[1].boxplot([NEES_all[0:N].T, gauss_compare_15], notch=True)
+    axs6[1].legend(['NEES', 'gauss (15 dim)'])
+    plt.grid()
 
-print("95% interval{}{}, Average NIS:{}".format(CI3[0],CI3[1],np.mean(NIS)))
+    gauss_compare_3  = np.sum(np.random.randn(3, N)**2, axis=0)
+    axs6[2].boxplot([NEES_pos[0:N].T, NEES_vel[0:N].T, NEES_att[0:N].T, NEES_accbias[0:N].T, NEES_gyrobias[0:N].T, gauss_compare_3], notch=True)
+    axs6[2].legend(['NEES pos', 'NEES vel', 'NEES att', 'NEES accbias', 'NEES gyrobias', 'gauss (3 dim)'])
+    plt.grid()
+
+print("95% interval{}{}, Average NIS CI3:{}".format(CI3[0],CI3[1],np.mean(NIS)))
+print("95% interval{}{}, Average NIS CI15:{}".format(CI15[0],CI15[1],np.mean(NIS)))
+
  
 plt.show()
 

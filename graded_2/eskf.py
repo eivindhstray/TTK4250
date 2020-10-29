@@ -268,14 +268,15 @@ class ESKF:
         A = self.Aerr(x_nominal, acceleration, omega)
         G = self.Gerr(x_nominal)
 
-        V = np.block([[-A,G@self.Q_err@G.T],[np.zeros((15,15)),A.T]])*Ts
+        V = np.block([[-A,G@self.Q_err@G.T],[np.zeros((15,15)),A.T]])
         
         assert V.shape == (
             30,
             30,
         ), f"ESKF.discrete_error_matrices: Van Loan matrix shape incorrect {V.shape}"
           # This can be slow...
-        VanLoanMatrix = la.expm(V)
+        #VanLoanMatrix = la.expm(V*Ts)
+        VanLoanMatrix = np.eye(30)+V*Ts+0.5*(V@V)*Ts**2
         Ad = VanLoanMatrix[15:,15:].T
         GQGd = Ad @ VanLoanMatrix[:15,15:]
 
