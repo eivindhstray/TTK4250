@@ -156,6 +156,8 @@ x_pred = np.zeros((steps, 16))
 P_pred = np.zeros((steps, 15, 15))
 
 NIS = np.zeros(gnss_steps)
+NIS_altitude = np.zeros(gnss_steps) #TODO separate
+NIS_horisontal = np.zeros(gnss_steps) #TODO separate
 
 # %% Initialise
 x_pred[0, POS_IDX] = np.array([0, 0, -5]) # starting 5 metres above ground
@@ -185,7 +187,6 @@ for k in tqdm(range(N)):
         p_std = (accuracy_GNSS[GNSSk]**2)*np.array([0.3,0.3,0.5])
         R_GNSS = 0.1*np.diag(p_std)
         NIS[GNSSk] = eskf.NIS_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
-
         x_est[k], P_est[k] = eskf.update_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
         if eskf.debug:
             assert np.all(np.isfinite(P_est[k])), f"Not finite P_pred at index {k}"
