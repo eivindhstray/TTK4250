@@ -119,15 +119,15 @@ cont_gyro_noise_std = 4.36e-5  # (rad/s)/sqrt(Hz)
 cont_acc_noise_std = 1.167e-3  # (m/s**2)/sqrt(Hz)
 
 # Discrete sample noise at simulation rate used
-rate_std = cont_gyro_noise_std*np.sqrt(1/dt)
-acc_std  = cont_acc_noise_std*np.sqrt(1/dt)
+rate_std = cont_gyro_noise_std
+acc_std  = cont_acc_noise_std
 
 # Bias values
 rate_bias_driving_noise_std = 5e-5 # TODO
-cont_rate_bias_driving_noise_std = rate_bias_driving_noise_std/np.sqrt(1/dt)
+cont_rate_bias_driving_noise_std = rate_bias_driving_noise_std
 
 acc_bias_driving_noise_std = 4e-3# TODO
-cont_acc_bias_driving_noise_std = acc_bias_driving_noise_std/np.sqrt(1/dt)
+cont_acc_bias_driving_noise_std = acc_bias_driving_noise_std
 
 # Position and velocity measurement
 p_acc = 1e-16
@@ -184,8 +184,8 @@ GNSSk = 0
 for k in tqdm(range(N)):
     if timeIMU[k] >= timeGNSS[GNSSk]:
         #R_GNSS = # TODO: Current GNSS covariance
-        p_std = (accuracy_GNSS[GNSSk]**2)*np.array([0.3,0.3,0.5])
-        R_GNSS = 0.1*np.diag(p_std)
+        p_std = (accuracy_GNSS[GNSSk])*np.array([0.3,0.3,0.5])
+        R_GNSS = 0.1*np.diag(p_std**2)
         NIS[GNSSk],NIS_planar[GNSSk],NIS_altitude[GNSSk] = eskf.NIS_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
         x_est[k], P_est[k] = eskf.update_GNSS_position(x_pred[k], P_pred[k], z_GNSS[GNSSk], R_GNSS, lever_arm)
         if eskf.debug:
@@ -275,20 +275,22 @@ plt.grid()
 
 confprob = 0.95
 CI15 = np.array(scipy.stats.chi2.interval(confprob, 15)).reshape((2, 1))
+CI2 = np.array(scipy.stats.chi2.interval(confprob, 2)).reshape((2, 1))
+CI1 = np.array(scipy.stats.chi2.interval(confprob, 1)).reshape((2, 1))
 CI3 = np.array(scipy.stats.chi2.interval(confprob, 3)).reshape((2, 1))
 
 fig5, axs5 = plt.subplots(3, 1, num=5, clear=True)
 
 axs5[0].plot(NIS_planar[:GNSSk])
-axs5[0].plot(np.array([0, N - 1]) * dt, (CI3 @ np.ones((1, 2))).T)
-insideCI = np.mean((CI3[0] <= NIS_planar) * (NIS_planar <= CI3[1]))
+axs5[0].plot(np.array([0, N - 1]) * dt, (CI2 @ np.ones((1, 2))).T)
+insideCI = np.mean((CI2[0] <= NIS_planar) * (NIS_planar <= CI2[1]))
 axs5[0].set(
     title=f"NIS_planar ({100 *  insideCI:.1f} inside {100 * confprob} confidence interval)"
 )
 axs5[0].set_ylim([0, 20])
 axs5[1].plot(NIS_altitude[:GNSSk])
-axs5[1].plot(np.array([0, N - 1]) * dt, (CI3 @ np.ones((1, 2))).T)
-insideCI = np.mean((CI3[0] <= NIS_altitude) * (NIS_altitude <= CI3[1]))
+axs5[1].plot(np.array([0, N - 1]) * dt, (CI1 @ np.ones((1, 2))).T)
+insideCI = np.mean((CI1[0] <= NIS_altitude) * (NIS_altitude <= CI1[1]))
 axs5[1].set(
     title=f"NIS_altitude ({100 *  insideCI:.1f} inside {100 * confprob} confidence interval)"
 )
