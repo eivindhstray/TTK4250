@@ -121,10 +121,8 @@ gnss_steps = len(z_GNSS)
 # IMU noise values for STIM300, based on datasheet and simulation sample rate
 # Continous noise
 # TODO: What to remove here?
-#cont_acc_noise_std = 0.06/3600
-#cont_gyro_noise_std = 0.0225 # Freq = 1Hz
 cont_gyro_noise_std = 4.36e-5  # (rad/s)/sqrt(Hz)
-cont_acc_noise_std = 1.167e-3  # (m/s**2)/sqrt(Hz)
+cont_acc_noise_std = 1e-3  # (m/s**2)/sqrt(Hz)
 
 # Discrete sample noise at simulation rate used
 rate_std = 0.5 * cont_gyro_noise_std * np.sqrt(1 / dt) 
@@ -139,9 +137,14 @@ cont_rate_bias_driving_noise_std = (
 acc_bias_driving_noise_std = 5*4e-3
 cont_acc_bias_driving_noise_std = 6 * acc_bias_driving_noise_std / np.sqrt(1 / dt)
 
+# %% Alternative measurement variance
+var_measurements = np.sum((z_GNSS-x_true[99:steps:100, POS_IDX])**2,axis = 0)/(z_GNSS.shape[0]-1)
+print(var_measurements)
+
 # Position and velocity measurement
 p_std = np.array([0.3, 0.3, 0.5])  # Measurement noise
-R_GNSS = np.diag(p_std ** 2)
+
+R_GNSS = np.diag(var_measurements) # Variance from the actual dataset
 
 p_acc = 1e-16
 p_gyro = 1e-16
@@ -158,6 +161,7 @@ eskf = ESKF(
     S_g=S_g, # set the gyro correction matrix,
     debug=False # TODO: False to avoid expensive debug checks, can also be suppressed by calling 'python -O run_INS_simulated.py'
 )
+
 
 # %% Allocate
 x_est = np.zeros((steps, 16))
@@ -441,7 +445,7 @@ if doGNSS:
     plt.grid()
 
 ## Decouple NIS
-
+'''
 confprob = 0.95
 CI15 = np.array(scipy.stats.chi2.interval(confprob, 15)).reshape((2, 1))
 CI3 = np.array(scipy.stats.chi2.interval(confprob, 3)).reshape((2, 1))
@@ -473,7 +477,7 @@ axs7[2].set_ylim([0, 20])
 
 print("95% interval{}{}, Average NIS CI3:{}".format(CI3[0],CI3[1],np.mean(NIS)))
 print("95% interval{}{}, Average NIS CI15:{}".format(CI15[0],CI15[1],np.mean(NIS)))
-
+'''
  
 plt.show()
 

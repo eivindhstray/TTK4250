@@ -92,7 +92,7 @@ except Exception as e:
 filename_to_load = "task_real.mat"
 loaded_data = scipy.io.loadmat(filename_to_load)
 
-do_corrections = True # TODO: set to false for the last task
+do_corrections = False # TODO: set to false for the last task
 if do_corrections:
     S_a = loaded_data['S_a']
     S_g = loaded_data['S_g']
