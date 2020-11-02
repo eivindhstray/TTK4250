@@ -44,8 +44,19 @@ class EKFSLAM:
         np.ndarray, shape = (3,)
             the predicted state
         """
-        xpred = # TODO, eq (11.7). Should wrap heading angle between (-pi, pi), see utils.wrapToPi
 
+        x_prev = x[0]
+        y_prev = x[1]
+        psi_prev = x[2]
+        u_k = u[0]
+        v_k = u[1]
+        phi_k = u[2]
+        
+        x_1 = x_prev + u_k*np.cos(psi_prev) - v_k*np.sin(psi_prev)
+        x_2 = y_prev + u_k*np.sin(psi_prev) - v_k*np.cos(psi_prev)
+        x_3 = utils.wrapToPi(psi_prev+phi_k)
+        xpred = np.array(x_1,x_2,x_3) # TODO, eq (11.7). Should wrap heading angle between (-pi, pi), see utils.wrapToPi
+        
         assert xpred.shape == (3,), "EKFSLAM.f: wrong shape for xpred"
         return xpred
 
@@ -64,8 +75,14 @@ class EKFSLAM:
         np.ndarray
             The Jacobian of f wrt. x.
         """
-        Fx = # TODO, eq (11.13)
-
+        
+        psi = x[2]
+        u = u[0]
+        v = u[1]
+        
+        Fx = np.eye(3)# TODO, eq (11.13)
+        Fx[0,2] = -u*np.sin(psi)-v*np.cos(psi)
+        Fx[1,2] = u*np.cos(psi)-v*np.sin(psi)
         assert Fx.shape == (3, 3), "EKFSLAM.Fx: wrong shape"
         return Fx
 
@@ -84,7 +101,16 @@ class EKFSLAM:
         np.ndarray
             The Jacobian of f wrt. u.
         """
-        Fu = # TODO, eq (11.14)
+
+        psi = x[2]
+        u = u[0]
+        v = u[1]
+        
+        Fu = np.eye(3)# TODO, eq (11.14)
+        Fu[0,0] = np.cos(psi)
+        Fu[0,1] = -np.sin(psi)
+        Fu[1,0] = np.sin(psi)
+        Fu[1,1] = np.cos(psi)
 
         assert Fu.shape == (3, 3), "EKFSLAM.Fu: wrong shape"
         return Fu
@@ -119,11 +145,12 @@ class EKFSLAM:
         etapred = np.empty_like(eta)
 
         x = eta[:3]
-        etapred[:3] = # TODO robot state prediction
+        u = z_odo # IS THIS CORRECT??
+        etapred[:3] = self.f(x,u)# TODO robot state prediction
         etapred[3:] = # TODO landmarks: no effect
 
-        Fx = # TODO
-        Fu = # TODO
+        Fx = self.Fx(x,u) # TODO
+        Fu = self.Fu(x,u) # TODO
 
         # evaluate covariance prediction in place to save computation
         # only robot state changes, so only rows and colums of robot state needs changing
