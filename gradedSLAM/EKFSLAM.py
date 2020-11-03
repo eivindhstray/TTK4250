@@ -157,9 +157,12 @@ class EKFSLAM:
         # cov matrix layout:
         # [[P_xx, P_xm],
         # [P_mx, P_mm]]
-        P[:3, :3] = # TODO robot cov prediction
-        P[:3, 3:] = # TODO robot-map covariance prediction
-        P[3:, :3] = # TODO map-robot covariance: transpose of the above
+        F = np.array([[Fx, np.zeros(3,3)]
+                      [np.zeros(3,3), np.eye(3)]])
+        #P[:3, :3] = # TODO robot cov prediction
+        #P[:3, 3:] = # TODO robot-map covariance prediction
+        #P[3:, :3] = # TODO map-robot covariance: transpose of the above
+        P = F @ P @ F.T
 
         assert np.allclose(P, P.T), "EKFSLAM.predict: not symmetric P"
         assert np.all(
