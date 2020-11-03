@@ -147,7 +147,7 @@ class EKFSLAM:
         x = eta[:3]
         u = z_odo # IS THIS CORRECT??
         etapred[:3] = self.f(x,u)# TODO robot state prediction
-        etapred[3:] = # TODO landmarks: no effect
+        etapred[3:] = eta[3:] # TODO landmarks: no effect
 
         Fx = self.Fx(x,u) # TODO
         Fu = self.Fu(x,u) # TODO
@@ -187,7 +187,7 @@ class EKFSLAM:
             The landmarks in the sensor frame.
         """
         # extract states and map
-        x = eta[0:3]
+        x = eta[:3]
         ## reshape map (2, #landmarks), m[:, j] is the jth landmark
         m = eta[3:].reshape((-1, 2)).T
 
@@ -195,13 +195,13 @@ class EKFSLAM:
 
         # None as index ads an axis with size 1 at that position.
         # Numpy broadcasts size 1 dimensions to any size when needed
-        delta_m = # TODO, relative position of landmark to sensor on robot in world frame
+        delta_m = m - x[:2] # TODO, relative position of landmark to sensor on robot in world frame
 
-        zpredcart = # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
+        zpredcart = Rot @ delta_m # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
 
-        zpred_r = # TODO, ranges
-        zpred_theta = # TODO, bearings
-        zpred = # TODO, the two arrays above stacked on top of each other vertically like 
+        zpred_r = la.norm(zpredcart, 2) # TODO, ranges
+        zpred_theta = np.arctan(zpredcart[1], zpredcart[0])# TODO, bearings
+        zpred = np.array([zpred_r, zpred_theta]).T # TODO, the two arrays above stacked on top of each other vertically like 
         # [ranges; 
         #  bearings]
         # into shape (2, #lmrk)
@@ -235,7 +235,7 @@ class EKFSLAM:
 
         Rot = rotmat2d(x[2])
 
-        delta_m = # TODO, relative position of landmark to robot in world frame. m - rho that appears in (11.15) and (11.16)
+        delta_m = m - eta[:2] # TODO, relative position of landmark to robot in world frame. m - rho that appears in (11.15) and (11.16)
 
         zc = # TODO, (2, #measurements), each measured position in cartesian coordinates like
         # [x coordinates;
@@ -255,8 +255,9 @@ class EKFSLAM:
         # Allocate H and set submatrices as memory views into H
         # You may or may not want to do this like this
         H = np.zeros((2 * numM, 3 + 2 * numM)) # TODO, see eq (11.15), (11.16), (11.17)
-        Hx = H[:, :3]  # slice view, setting elements of Hx will set H as well
-        Hm = H[:, 3:]  # slice view, setting elements of Hm will set H as well
+        Hx = H[:, :3] = -np.array([[1/la.norm(delta_m, 2) * delta_m.T, 0]
+                                    [1/la.norm(delta_m, 2)**2 * delta_m.T*Rpihalf, 1])  # slice view, setting elements of Hx will set H as well
+        Hm = H[:, 3:] = 1/la.norm(delta_m, 2)**2 * np.array([la.norm(delta_m, 2)*delta_m.T, delta_m.T*Rpihalf]).T  # slice view, setting elements of Hm will set H as well
 
         # proposed way is to go through landmarks one by one
         jac_z_cb = -np.eye(2, 3)  # preallocate and update this for some speed gain if looping
