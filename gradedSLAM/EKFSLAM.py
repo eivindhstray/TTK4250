@@ -5,6 +5,7 @@ import scipy.linalg as la
 from utils import rotmat2d
 from JCBB import JCBB
 import utils
+from numpy import matlib as ml
 
 # import line_profiler
 # import atexit
@@ -190,14 +191,14 @@ class EKFSLAM:
 
         zpredcart = Rot @ delta_m # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
 
-        zpred_r = la.norm(zpredcart, 2) # TODO, ranges
-        zpred_theta = np.arctan(zpredcart[1], zpredcart[0])# TODO, bearings
+        zpred_r = [np.linalg.norm(mi) for mi in delta_m.T]# TODO, ranges
+        zpred_theta = [np.arctan2(mi[1],mi[0]) for mi in delta_m.T]# TODO, bearings
 
         zpred = np.vstack([zpred_r, zpred_theta])# TODO, the two arrays above stacked on top of each other vertically like 
         # [ranges; 
         #  bearings]
         # into shape (2, #lmrk)
-        print(zpred)
+        
         zpred = zpred.T.ravel() # stack measurements along one dimension, [range1 bearing1 range2 bearing2 ...]
 
         assert (
@@ -250,19 +251,17 @@ class EKFSLAM:
         # Allocate H and set submatrices as memory views into H
         # You may or may not want to do this like this
         H = np.zeros((2 * numM, 3 + 2 * numM)) # TODO, see eq (11.15), (11.16), (11.17)
-        '''
-        Hx = H[:, :3] = -np.array([delta_m[i].T/zr[i], 0]
-                                    [1/(zr[i]**2) * delta_m[i].T*Rpihalf, 1])  # slice view, setting elements of Hx will set H as well
-        Hm = H[:, 3:] = 1/(zr[i]**2)* np.array([zr[i]*delta_m[i].T, delta_m[i].T*Rpihalf]).T  # slice view, setting elements of Hm will set H as well
-        '''
+    
+        Hx = H[:, :3]   # slice view, setting elements of Hx will set H as well
+        Hm = H[:, 3:]   # slice view, setting elements of Hm will set H as well
+        
         # proposed way is to go through landmarks one by one
         jac_z_cb = -np.eye(2, 3)  # preallocate and update this for some speed gain if looping
         for i in range(numM):  # But this whole loop can be vectorized
             ind = 2 * i # starting postion of the ith landmark into H
             inds = slice(ind, ind + 2)  # the inds slice for the ith landmark into H
-            H[inds,:] = -np.array([zr[i]*delta_m[i].T, 0],
-                            [1/(zr**2) * delta_m.T*Rpihalf, 1])
-            H[inds,inds] = 1/(zr[i]**2)*np.array([[zr[i]*delta_m[i].T],[delta_m.T@Rpihalf]])
+            Hx[inds,:] = -1 * np.array([[*(delta_m[:,i].T / zr[i]), 0], [*(delta_m[:,i].T / (zr[i] ** 2)), 1]])
+            Hm[inds,inds] = (1 / zr[i] ** 2) * np.array([[*(zr[i] * delta_m[:,i].T)], [*delta_m[:,i].T @ Rpihalf]])
             
             # TODO: Set H or Hx and Hm here
 
@@ -416,9 +415,11 @@ class EKFSLAM:
             zpred = self.h(eta) #TODO
             H = self.H(eta)# TODO
 
+            R = np.diag(np.diagonal(ml.repmat(self.R,numLmk,numLmk)))
+
             # Here you can use simply np.kron (a bit slow) to form the big (very big in VP after a while) R,
             # or be smart with indexing and broadcasting (3d indexing into 2d mat) realizing you are adding the same R on all diagonals
-            S = H@P@H.T + self.R# TODO,
+            S = H@P@H.T + R# TODO,
             assert (
                 S.shape == zpred.shape * 2
             ), "EKFSLAM.update: wrong shape on either S or zpred"
@@ -440,8 +441,11 @@ class EKFSLAM:
 
                 # Kalman mean update
                 # S_cho_factors = la.cho_factor(Sa) # Optional, used in places for S^-1, see scipy.linalg.cho_factor and scipy.linalg.cho_solve
-                W = P@la.solve(H.T,S)# TODO, Kalman gain, can use S_cho_factors
-                etaupd = zpred +W@v# TODO, Kalman update
+                S_cho_factors = la.cho_factor(Sa)
+                
+                W = P@Ha.T@la.cho_solve(S_cho_factors,np.ones(len(Sa)))# TODO, Kalman gain, can use S_cho_factors
+                print(W.shape,v.shape,eta.shape)
+                etaupd = eta + W@v# TODO, Kalman update
 
                 # Kalman cov update: use Joseph form for stability
                 jo = -W @ H

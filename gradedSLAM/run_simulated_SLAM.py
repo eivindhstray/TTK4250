@@ -10,6 +10,8 @@ from matplotlib import animation
 from scipy.stats import chi2
 import utils
 
+
+
 try:
     from tqdm import tqdm
 except ImportError as e:
@@ -142,7 +144,7 @@ N = K
 print("starting sim (" + str(N) + " iterations)")
 
 for k, z_k in tqdm(enumerate(z[:N])):
-    
+
     eta_hat[k], P_hat[k], NIS[k], a[k] = slam.update(eta_pred[k],P_pred[k],z_k)# TODO update
 
     if k < K - 1:
