@@ -186,17 +186,18 @@ class EKFSLAM:
 
         # None as index ads an axis with size 1 at that position.
         # Numpy broadcasts size 1 dimensions to any size when needed
-        delta_m = m - x[:2] - Rot@self.sensor_offset# TODO, relative position of landmark to sensor on robot in world frame
+        delta_m = m - x[:2].reshape(2,1) - (Rot@self.sensor_offset).reshape(2,1)# TODO, relative position of landmark to sensor on robot in world frame
 
         zpredcart = Rot @ delta_m # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
 
         zpred_r = la.norm(zpredcart, 2) # TODO, ranges
         zpred_theta = np.arctan(zpredcart[1], zpredcart[0])# TODO, bearings
-        zpred = np.array([zpred_r, zpred_theta]).T # TODO, the two arrays above stacked on top of each other vertically like 
+
+        zpred = np.vstack([zpred_r, zpred_theta])# TODO, the two arrays above stacked on top of each other vertically like 
         # [ranges; 
         #  bearings]
         # into shape (2, #lmrk)
-
+        print(zpred)
         zpred = zpred.T.ravel() # stack measurements along one dimension, [range1 bearing1 range2 bearing2 ...]
 
         assert (
