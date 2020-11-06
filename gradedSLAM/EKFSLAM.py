@@ -138,8 +138,7 @@ class EKFSLAM:
         etapred = np.empty_like(eta)
 
         x = eta[:3]
-        print(x)
-        u = z_odo # IS THIS CORRECT??
+        u = z_odo 
         etapred[:3] = self.f(x,u)# TODO robot state prediction
         etapred[3:] = eta[3:] # TODO landmarks: no effect, landmarks stand still
 
@@ -192,7 +191,7 @@ class EKFSLAM:
         zpredcart = Rot @ delta_m # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
 
         zpred_r = la.norm(zpredcart, 2) # TODO, ranges
-        zpred_theta = np.atan2(zpredcart[1], zpredcart[0])# TODO, bearings
+        zpred_theta = np.arctan(zpredcart[1], zpredcart[0])# TODO, bearings
         zpred = np.array([zpred_r, zpred_theta]).T # TODO, the two arrays above stacked on top of each other vertically like 
         # [ranges; 
         #  bearings]
@@ -308,7 +307,7 @@ class EKFSLAM:
             zj = z[inds]    
             rot = rotmat2d(eta[2]+zj[1]) # TODO, rotmat in Gz
             zj_cart = rot[:, 1]
-            lmnew[inds] = eta[:2]+rot@zj_cart+sensor_offset_world.T# TODO, calculate position of new landmark in world frame
+            lmnew[inds] =  eta[:2] + sensor_offset_world * zj[0]# TODO, calculate position of new landmark in world frame
 
             Gx[inds, :2] = I2 # TODO
             Gx[inds, 2] = sensor_offset_world_der+zj[0]*zj_cart# TODO
@@ -413,7 +412,7 @@ class EKFSLAM:
 
         if numLmk > 0:
             # Prediction and innovation covariance
-            zpred = self.h(z) #TODO
+            zpred = self.h(eta) #TODO
             H = self.H(eta)# TODO
 
             # Here you can use simply np.kron (a bit slow) to form the big (very big in VP after a while) R,
