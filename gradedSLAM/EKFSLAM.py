@@ -261,9 +261,9 @@ class EKFSLAM:
         for i in range(numM):  # But this whole loop can be vectorized
             ind = 2 * i # starting postion of the ith landmark into H
             inds = slice(ind, ind + 2)  # the inds slice for the ith landmark into H
-            Hx[inds,:] = -np.array([zr[i]*delta_m[i].T, 0],
+            H[inds,:] = -np.array([zr[i]*delta_m[i].T, 0],
                             [1/(zr**2) * delta_m.T*Rpihalf, 1])
-            Hm[inds,inds] = 1/(zr[i]**2)*np.array([[z_r[i]*delta_m[i].T],[delta_m.T@Rpihalf]])
+            H[inds,inds] = 1/(zr[i]**2)*np.array([[zr[i]*delta_m[i].T],[delta_m.T@Rpihalf]])
             
             # TODO: Set H or Hx and Hm here
 
