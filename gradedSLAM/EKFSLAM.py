@@ -48,8 +48,6 @@ class EKFSLAM:
         
         psi_prev = x[2]
         psi_prev = utils.wrapToPi(psi_prev)
-       
-        print(x)
         x_pred = np.zeros((3,))
         x_pred[0] = x[0] + u[0]*np.cos(psi_prev)-u[1]*np.sin(psi_prev) # TODO, eq (11.7). Should wrap heading angle between (-pi, pi), see utils.wrapToPi
         x_pred[1] = x[1] + u[0]*np.sin(psi_prev) + u[1]*np.cos(psi_prev)
@@ -140,6 +138,7 @@ class EKFSLAM:
         etapred = np.empty_like(eta)
 
         x = eta[:3]
+        print(x)
         u = z_odo # IS THIS CORRECT??
         etapred[:3] = self.f(x,u)# TODO robot state prediction
         etapred[3:] = eta[3:] # TODO landmarks: no effect, landmarks stand still
@@ -414,7 +413,7 @@ class EKFSLAM:
 
         if numLmk > 0:
             # Prediction and innovation covariance
-            zpred = self.f(eta,z) #TODO
+            zpred = self.h(z) #TODO
             H = self.H(eta)# TODO
 
             # Here you can use simply np.kron (a bit slow) to form the big (very big in VP after a while) R,
