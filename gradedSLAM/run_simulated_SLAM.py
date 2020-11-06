@@ -143,10 +143,10 @@ print("starting sim (" + str(N) + " iterations)")
 
 for k, z_k in tqdm(enumerate(z[:N])):
 
-    eta_hat[k], P_hat[k], NIS[k], a[k] = EKFSLAM.update(eta_pred[k],P_pred[k],z_k)# TODO update
+    eta_hat[k], P_hat[k], NIS[k], a[k] = slam.update(eta_pred[k],P_pred[k],z_k)# TODO update
 
     if k < K - 1:
-        eta_pred[k + 1], P_pred[k + 1] = EKFSLAM.predict(eta_pred[k],P_hat[k],odometry[k])# TODO predict
+        eta_pred[k + 1], P_pred[k + 1] = slam.predict(eta_hat[k],P_hat[k],odometry[k])# TODO predict
 
     assert (
         eta_hat[k].shape[0] == P_hat[k].shape[0]
