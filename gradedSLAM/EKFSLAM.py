@@ -45,15 +45,21 @@ class EKFSLAM:
             the predicted state
         """
 
-       
+        
         psi_prev = x[2]
+        psi_prev = utils.wrapToPi(psi_prev)
        
+        print(x)
+        x_pred = np.zeros((3,))
+        x_pred[0] = x[0] + u[0]*np.cos(psi_prev)-u[1]*np.sin(psi_prev) # TODO, eq (11.7). Should wrap heading angle between (-pi, pi), see utils.wrapToPi
+        x_pred[1] = x[1] + u[0]*np.sin(psi_prev) + u[1]*np.cos(psi_prev)
+        x_pred[2] += u[2]
+        x_pred[2] = utils.wrapToPi(x_pred[2])
         
+
         
-        xpred = x + rotmat2d(psi_prev)@u, # TODO, eq (11.7). Should wrap heading angle between (-pi, pi), see utils.wrapToPi
-        
-        assert xpred.shape == (3,), "EKFSLAM.f: wrong shape for xpred"
-        return xpred
+        assert x_pred.shape == (3,), "EKFSLAM.f: wrong shape for xpred"
+        return x_pred
 
     def Fx(self, x: np.ndarray, u: np.ndarray) -> np.ndarray:
         """Calculate the Jacobian of f with respect to x.
@@ -72,11 +78,10 @@ class EKFSLAM:
         """
         
         psi = x[2]
-        u = u[0]
-        v = u[1]
         
-        Fx = rotmat2d(psi)@u# TODO, eq (11.13)
         
+        Fx = np.eye(3)# TODO, eq (11.13)
+        Fx[0:2,2] = rotmat2d(psi)@u[:2]
         assert Fx.shape == (3, 3), "EKFSLAM.Fx: wrong shape"
         return Fx
 
@@ -97,14 +102,10 @@ class EKFSLAM:
         """
 
         psi = x[2]
-        u = u[0]
-        v = u[1]
+        
         
         Fu = np.eye(3)# TODO, eq (11.14)
-        Fu[0,0] = np.cos(psi)
-        Fu[0,1] = -np.sin(psi)
-        Fu[1,0] = np.sin(psi)
-        Fu[1,1] = np.cos(psi)
+        Fu[0:2,0:2] = rotmat2d(psi)
 
         assert Fu.shape == (3, 3), "EKFSLAM.Fu: wrong shape"
         return Fu
@@ -151,7 +152,7 @@ class EKFSLAM:
         # cov matrix layout:
         # [[P_xx, P_xm],
         # [P_mx, P_mm]]
-        P[:3, :3] =  Fx@P[0:3,0:3]@Fx + Fu@self.Q@Fu# TODO robot cov prediction
+        P[:3, :3] =  Fx@P[0:3,0:3]@Fx.T + Fu@self.Q@Fu.T# TODO robot cov prediction
         P[:3, 3:] =  Fx@P[:3,3:]# TODO robot-map covariance prediction
         P[3:, :3] = P[:3, 3:].T # TODO map-robot covariance: transpose of the above
         
@@ -305,24 +306,24 @@ class EKFSLAM:
         for j in range(numLmk):
             ind = 2 * j
             inds = slice(ind, ind + 2)
-            zj = z[inds]
-            zj_cart = np.array([-np.sin(zj[1]+eta[2]),np.cos(zj[1]+eta[2])])
+            zj = z[inds]    
             rot = rotmat2d(eta[2]+zj[1]) # TODO, rotmat in Gz
+            zj_cart = rot[:, 1]
             lmnew[inds] = eta[:2]+rot@zj_cart+sensor_offset_world.T# TODO, calculate position of new landmark in world frame
 
             Gx[inds, :2] = I2 # TODO
-            Gx[inds, 2] = sensor_offset_world_der+zj[1]*zj_cart# TODO
+            Gx[inds, 2] = sensor_offset_world_der+zj[0]*zj_cart# TODO
 
-            Gz = rot@la.block_diag(1,zj[0])# TODO
+            Gz = rot@np.diag([1,zj[0]])# TODO
 
-            Rall[inds, inds] = Gz@rot@Gz.T # TODO, Gz * R * Gz^T, transform measurement covariance from polar to cartesian coordinates
+            Rall[inds, inds] = Gz@self.R@Gz.T # TODO, Gz * R * Gz^T, transform measurement covariance from polar to cartesian coordinates
 
         assert len(lmnew) % 2 == 0, "SLAM.add_landmark: lmnew not even length"
-        etaadded = np.append(eta,lmnew)# TODO, append new landmarks to state vector
+        etaadded = np.concatenate([eta[:], lmnew])# TODO, append new landmarks to state vector
         Padded = la.block_diag(P, Gx @ P[:3,:3] @ Gx.T + Rall.T)# TODO, block diagonal of P_new, see problem text in 1g) in graded assignment 3
         Padded[:n,n:] = P[:,:3] @ Gx.T # TODO, top right corner of P_new
-        Padded[n:, :n] = Padded[:n,n:].T  # TODO, transpose of above. Should yield the same as calcualion, but this enforces symmetry and should be cheaper
-
+        Padded[n:, :n] = (Padded[:n,n:]).T  # TODO, transpose of above. Should yield the same as calcualion, but this enforces symmetry and should be cheaper
+        
         assert (
             etaadded.shape * 2 == Padded.shape
         ), "EKFSLAM.add_landmarks: calculated eta and P has wrong shape"

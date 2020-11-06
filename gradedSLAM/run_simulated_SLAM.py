@@ -96,7 +96,7 @@ K = len(z)
 M = len(landmarks)
 
 # %% Initilize
-Q = np.eye(2)# TODO
+Q = np.eye(3)# TODO
 R = np.eye(2)# TODO
 
 doAsso = True
@@ -142,7 +142,7 @@ N = K
 print("starting sim (" + str(N) + " iterations)")
 
 for k, z_k in tqdm(enumerate(z[:N])):
-
+    
     eta_hat[k], P_hat[k], NIS[k], a[k] = slam.update(eta_pred[k],P_pred[k],z_k)# TODO update
 
     if k < K - 1:
@@ -163,7 +163,7 @@ for k, z_k in tqdm(enumerate(z[:N])):
         NISnorm[k] = 1
         CInorm[k].fill(1)
 
-    NEESes[k] = EKFSLAM.NEESes(eta_hat[k],P,x_gt)# TODO, use provided function slam.NEESes
+    #NEESes[k] = EKFSLAM.NEESes(eta_hat[k],P_pred[k],poseGT[k])# TODO, use provided function slam.NEESes
 
     if doAssoPlot and k > 0:
         axAsso.clear()
