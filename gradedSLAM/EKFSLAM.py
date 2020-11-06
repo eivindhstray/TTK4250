@@ -45,15 +45,12 @@ class EKFSLAM:
             the predicted state
         """
 
-        x_prev = x[0]
-        y_prev = x[1]
+       
         psi_prev = x[2]
-        u_k = u[0]
-        v_k = u[1]
-        phi_k = u[2]
+       
         
         
-        xpred = x + rotmat2d(psi_prev)u, # TODO, eq (11.7). Should wrap heading angle between (-pi, pi), see utils.wrapToPi
+        xpred = x + rotmat2d(psi_prev)@u, # TODO, eq (11.7). Should wrap heading angle between (-pi, pi), see utils.wrapToPi
         
         assert xpred.shape == (3,), "EKFSLAM.f: wrong shape for xpred"
         return xpred
@@ -434,8 +431,8 @@ class EKFSLAM:
 
             # No association could be made, so skip update
             if za.shape[0] == 0:
-                etaupd = # TODO
-                Pupd = # TODO
+                etaupd = eta# TODO
+                Pupd = P # TODO
                 NIS = 1 # TODO: beware this one when analysing consistency.
 
             else:
@@ -454,7 +451,7 @@ class EKFSLAM:
                 Pupd = (np.eye(jo.shape)+jo)@P# TODO, Kalman update. This is the main workload on VP after speedups
 
                 # calculate NIS, can use S_cho_factors
-                NIS = v@la.solve(S,v)# TODO
+                NIS = v.T@la.solve(S,v)# TODO
 
                 # When tested, remove for speed
                 assert np.allclose(Pupd, Pupd.T), "EKFSLAM.update: Pupd not symmetric"
