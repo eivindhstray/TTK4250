@@ -189,11 +189,11 @@ class EKFSLAM:
         # Numpy broadcasts size 1 dimensions to any size when needed
         delta_m = m - x[:2].reshape(2,1) - (Rot@self.sensor_offset).reshape(2,1)# TODO, relative position of landmark to sensor on robot in world frame
 
-        zpredcart = Rot @ delta_m # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
+        zpredcart = [Rot @ mi for mi in delta_m.T] # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
 
         zpred_r = [np.linalg.norm(mi) for mi in delta_m.T]# TODO, ranges
-        zpred_theta = [np.arctan2(mi[1],mi[0]) for mi in delta_m.T]# TODO, bearings
-
+        zpred_theta = [np.arctan2(mi[1],mi[0]) for mi in zpredcart]# TODO, bearings
+       
         zpred = np.vstack([zpred_r, zpred_theta])# TODO, the two arrays above stacked on top of each other vertically like 
         # [ranges; 
         #  bearings]
@@ -260,8 +260,10 @@ class EKFSLAM:
         for i in range(numM):  # But this whole loop can be vectorized
             ind = 2 * i # starting postion of the ith landmark into H
             inds = slice(ind, ind + 2)  # the inds slice for the ith landmark into H
-            Hx[inds,:] = -1 * np.array([[*(delta_m[:,i].T / zr[i]), 0], [*(delta_m[:,i].T / (zr[i] ** 2)), 1]])
-            Hm[inds,inds] = (1 / zr[i] ** 2) * np.array([[*(zr[i] * delta_m[:,i].T)], [*delta_m[:,i].T @ Rpihalf]])
+            jac_z_cb[:, 2] = -Rpihalf @ delta_m[:,i] #delta_m[:, i]
+            Hx[inds,:][0, :] = (delta_m[:, i].T / zr[i]) @ jac_z_cb
+            Hx[inds,:][1, :] = (delta_m[:, i].T @ Rpihalf.T / (zr[i] ** 2)) @ jac_z_cb
+            Hm[inds,inds] = Hx[inds, 0:2]
             
             # TODO: Set H or Hx and Hm here
 
@@ -443,17 +445,17 @@ class EKFSLAM:
                 # S_cho_factors = la.cho_factor(Sa) # Optional, used in places for S^-1, see scipy.linalg.cho_factor and scipy.linalg.cho_solve
                 S_cho_factors = la.cho_factor(Sa)
                 
-                W = P@Ha.T@la.cho_solve(S_cho_factors,np.ones(len(Sa)))# TODO, Kalman gain, can use S_cho_factors
-                print(W.shape,v.shape,eta.shape)
+                W = P@Ha.T@la.inv(Sa)# TODO, Kalman gain, can use S_cho_factors
+                
                 etaupd = eta + W@v# TODO, Kalman update
 
                 # Kalman cov update: use Joseph form for stability
-                jo = -W @ H
+                jo = -W @ Ha
                 jo[np.diag_indices(jo.shape[0])] += 1  # same as adding Identity mat
-                Pupd = (np.eye(jo.shape)+jo)@P# TODO, Kalman update. This is the main workload on VP after speedups
+                Pupd = (np.eye(jo.shape[0])+jo)@P# TODO, Kalman update. This is the main workload on VP after speedups
 
                 # calculate NIS, can use S_cho_factors
-                NIS = v.T@la.solve(S,v)# TODO
+                NIS = v.T@la.inv(Sa)@v# TODO
 
                 # When tested, remove for speed
                 assert np.allclose(Pupd, Pupd.T), "EKFSLAM.update: Pupd not symmetric"
