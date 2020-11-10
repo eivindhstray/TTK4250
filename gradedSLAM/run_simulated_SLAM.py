@@ -98,10 +98,10 @@ K = len(z)
 M = len(landmarks)
 
 # %% Initilize
-Q = np.diag([1,1,0.1])*1e-3# TODO
-R = np.diag([1,1])*1e-2# TODO
+Q = np.diag([10,10,0.1])*1e-3# TODO
+R = np.diag([0.06 ** 2, 0.02 ** 2])# TODO
 
-doAsso = False
+doAsso = True
 
 JCBBalphas = np.array(
     [10e-4,10e-6] #TODO,
@@ -124,7 +124,7 @@ CInorm = np.zeros((K, 2))
 NEESes = np.zeros((K, 3))
 
 # For consistency testing
-alpha = 0.05
+alpha = 0.95
 
 # init
 eta_pred[0] = poseGT[0]  # we start at the correct position for reference
@@ -133,7 +133,7 @@ P_pred[0] = np.zeros((3, 3))  # we also say that we are 100% sure about that
 # %% Set up plotting
 # plotting
 
-doAssoPlot = False
+doAssoPlot = True
 playMovie = True
 if doAssoPlot:
     figAsso, axAsso = plt.subplots(num=1, clear=True)
@@ -279,6 +279,7 @@ if playMovie:
         print("recording movie...")
 
         from celluloid import Camera
+        print("Successfully imported celluloid -> Camera")
 
         pauseTime = 0.05
         fig_movie, ax_movie = plt.subplots(num=6, clear=True)
