@@ -445,7 +445,7 @@ class EKFSLAM:
                 # S_cho_factors = la.cho_factor(Sa) # Optional, used in places for S^-1, see scipy.linalg.cho_factor and scipy.linalg.cho_solve
                 S_cho_factors = la.cho_factor(Sa)
                 
-                W = P@Ha.T@la.inv(Sa)# TODO, Kalman gain, can use S_cho_factors
+                W = P@Ha.T@la.solve(Sa,np.eye(Sa.shape[0]))# TODO, Kalman gain, can use S_cho_factors
                 
                 etaupd = eta + W@v# TODO, Kalman update
 
@@ -455,7 +455,7 @@ class EKFSLAM:
                 Pupd = (np.eye(jo.shape[0])+jo)@P# TODO, Kalman update. This is the main workload on VP after speedups
 
                 # calculate NIS, can use S_cho_factors
-                NIS = v.T@la.inv(Sa)@v# TODO
+                NIS = v.T@la.cho_solve(S_cho_factors, v)# TODO
 
                 # When tested, remove for speed
                 assert np.allclose(Pupd, Pupd.T), "EKFSLAM.update: Pupd not symmetric"

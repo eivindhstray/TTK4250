@@ -98,10 +98,10 @@ K = len(z)
 M = len(landmarks)
 
 # %% Initilize
-Q = np.eye(3)# TODO
-R = np.eye(2)# TODO
+Q = np.diag([1,1,0.1])*1e-3# TODO
+R = np.diag([1,1])*1e-2# TODO
 
-doAsso = True
+doAsso = False
 
 JCBBalphas = np.array(
     [10e-4,10e-6] #TODO,
@@ -165,7 +165,7 @@ for k, z_k in tqdm(enumerate(z[:N])):
         NISnorm[k] = 1
         CInorm[k].fill(1)
 
-    #NEESes[k] = EKFSLAM.NEESes(eta_hat[k],P_pred[k],poseGT[k])# TODO, use provided function slam.NEESes
+        NEESes[k] = EKFSLAM.NEESes(eta_hat[k][:3], P_hat[k][:3, :3], poseGT[k])# TODO, use provided function slam.NEESes
 
     if doAssoPlot and k > 0:
         axAsso.clear()
@@ -186,7 +186,7 @@ for k, z_k in tqdm(enumerate(z[:N])):
 print("sim complete")
 
 pose_est = np.array([x[:3] for x in eta_hat[:N]])
-lmk_est = [eta_hat_k[3:].reshape(-1, 2) for eta_hat_k in eta_hat]
+lmk_est = [eta_hat_k[3:].reshape(-1, 2) for eta_hat_k in eta_hat[:N]]
 lmk_est_final = lmk_est[N - 1]
 
 np.set_printoptions(precision=4, linewidth=100)
@@ -213,9 +213,10 @@ for l, lmk_l in enumerate(lmk_est_final):
     ax2.plot(*el.T, "b")
 
 ax2.plot(*poseGT.T[:2], c="r", label="gt")
-ax2.plot(*pose_est.T[:2], c="g", label="est")
+ax2.plot(*pose_est[:2], c="g", label="est")
 ax2.plot(*ellipse(pose_est[-1, :2], P_hat[N - 1][:2, :2], 5, 200).T, c="g")
 ax2.set(title="results", xlim=(mins[0], maxs[0]), ylim=(mins[1], maxs[1]))
+ax2.legend()
 ax2.axis("equal")
 ax2.grid()
 
