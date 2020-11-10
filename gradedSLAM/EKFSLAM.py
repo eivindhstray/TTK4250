@@ -231,10 +231,11 @@ class EKFSLAM:
         numM = m.shape[1]
 
         Rot = rotmat2d(-x[2]) 
+        RotPiHalf = rotmat2d(np.pi/2)
 
-        delta_m = m - rho - Rot@sensor_offset # TODO, relative position of landmark to robot in world frame. m - rho that appears in (11.15) and (11.16)
+        delta_m = m - rho  # TODO, relative position of landmark to robot in world frame. m - rho that appears in (11.15) and (11.16)
 
-        zc = Rot@delta_m # TODO, (2, #measurements), each measured position in cartesian coordinates like
+        zc = delta_m - rotmat2d(x[2])@sensor_offset# TODO, (2, #measurements), each measured position in cartesian coordinates like
         # [x coordinates;
         #  y coordinates]
 
@@ -259,12 +260,13 @@ class EKFSLAM:
         # proposed way is to go through landmarks one by one
         jac_z_cb = -np.eye(2, 3)  # preallocate and update this for some speed gain if looping
         for i in range(numM):  # But this whole loop can be vectorized
+            jac_z_cb[:,2] = -Rpihalf@delta_m[:,i] # Keep it on the form in the assignment text
             ind = 2 * i # starting postion of the ith landmark into H
+            delx_i = (zc[:,i].T)/(zr[i])@jac_z_cb
+            delang_i = (zc[:,i].T @ Rpihalf.T )/( zr[i]**2 )@ jac_z_cb
             inds = slice(ind, ind + 2)  # the inds slice for the ith landmark into H
-            jac_z_cb[:, 2] = -Rpihalf @ delta_m[:,i] #delta_m[:, i]
-            Hx[inds,:][0, :] = (delta_m[:, i].T / zr[i]) @ jac_z_cb
-            Hx[inds,:][1, :] = (delta_m[:, i].T @ Rpihalf.T / (zr[i] ** 2)) @ jac_z_cb
-            Hm[inds,inds] = Hx[inds, 0:2]
+            Hx[inds,:] = np.array([delx_i,delang_i])
+            Hm[inds,inds] = -Hx[inds,:2]
             
             # TODO: Set H or Hx and Hm here
 
@@ -309,11 +311,11 @@ class EKFSLAM:
             inds = slice(ind, ind + 2)
             zj = z[inds]    
             rot = rotmat2d(eta[2]+zj[1]) # TODO, rotmat in Gz
-            zj_cart = rot[:, 1]
-            lmnew[inds] =  eta[:2] + sensor_offset_world * zj[0]# TODO, calculate position of new landmark in world frame
+            zj_cart = zj[0] * rot[:,0]
+            lmnew[inds] =  eta[:2] + rotmat2d(eta[2]) @ zj_cart + sensor_offset_world# TODO, calculate position of new landmark in world frame
 
             Gx[inds, :2] = I2 # TODO
-            Gx[inds, 2] = sensor_offset_world_der+zj[0]*zj_cart# TODO
+            Gx[inds, 2] = zj_cart + sensor_offset_world_der# TODO
 
             Gz = rot@np.diag([1,zj[0]])# TODO
 
@@ -321,8 +323,8 @@ class EKFSLAM:
 
         assert len(lmnew) % 2 == 0, "SLAM.add_landmark: lmnew not even length"
         etaadded = np.concatenate([eta[:], lmnew])# TODO, append new landmarks to state vector
-        Padded = la.block_diag(P, Gx @ P[:3,:3] @ Gx.T + Rall.T)# TODO, block diagonal of P_new, see problem text in 1g) in graded assignment 3
-        Padded[:n,n:] = P[:,:3] @ Gx.T # TODO, top right corner of P_new
+        Padded = la.block_diag(P, Gx @ P[:3,:3] @ Gx.T + Rall)# TODO, block diagonal of P_new, see problem text in 1g) in graded assignment 3
+        Padded[:n,n:] = P[:,:3]@Gx.T  # TODO, top right corner of P_new
         Padded[n:, :n] = (Padded[:n,n:]).T  # TODO, transpose of above. Should yield the same as calcualion, but this enforces symmetry and should be cheaper
         
         assert (
@@ -453,7 +455,7 @@ class EKFSLAM:
                 # Kalman cov update: use Joseph form for stability
                 jo = -W @ Ha
                 jo[np.diag_indices(jo.shape[0])] += 1  # same as adding Identity mat
-                Pupd = (np.eye(jo.shape[0])+jo)@P# TODO, Kalman update. This is the main workload on VP after speedups
+                Pupd = jo@P# TODO, Kalman update. This is the main workload on VP after speedups
 
                 # calculate NIS, can use S_cho_factors
                 NIS = v.T@la.cho_solve(S_cho_factors, v)# TODO

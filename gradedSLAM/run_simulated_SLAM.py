@@ -104,7 +104,7 @@ R = np.diag([0.06 ** 2, 0.02 ** 2])# TODO
 doAsso = True
 
 JCBBalphas = np.array(
-    [10e-4,10e-6] #TODO,
+    [1e-4,1e-6] #TODO,
 )  # first is for joint compatibility, second is individual
 # these can have a large effect on runtime either through the number of landmarks created
 # or by the size of the association search space.
@@ -124,7 +124,7 @@ CInorm = np.zeros((K, 2))
 NEESes = np.zeros((K, 3))
 
 # For consistency testing
-alpha = 0.95
+alpha = 0.05
 
 # init
 eta_pred[0] = poseGT[0]  # we start at the correct position for reference
@@ -133,8 +133,8 @@ P_pred[0] = np.zeros((3, 3))  # we also say that we are 100% sure about that
 # %% Set up plotting
 # plotting
 
-doAssoPlot = True
-playMovie = True
+doAssoPlot = False
+playMovie = False
 if doAssoPlot:
     figAsso, axAsso = plt.subplots(num=1, clear=True)
 
