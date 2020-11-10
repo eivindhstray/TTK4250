@@ -46,7 +46,7 @@ class EKFSLAM:
             the predicted state
         """
 
-        
+        """
         psi_prev = x[2]
         psi_prev = utils.wrapToPi(psi_prev)
         x_pred = np.zeros((3,))
@@ -54,8 +54,9 @@ class EKFSLAM:
         x_pred[1] = x[1] + u[0]*np.sin(psi_prev) + u[1]*np.cos(psi_prev)
         x_pred[2] += u[2]
         x_pred[2] = utils.wrapToPi(x_pred[2])
-        
+        """
 
+        x_pred = np.hstack([x[0:2]+rotmat2d(x[2])@u[:2],utils.wrapToPi(x[2]+u[2])])
         
         assert x_pred.shape == (3,), "EKFSLAM.f: wrong shape for xpred"
         return x_pred
@@ -80,7 +81,7 @@ class EKFSLAM:
         
         
         Fx = np.eye(3)# TODO, eq (11.13)
-        Fx[0:2,2] = rotmat2d(psi)@u[:2]
+        Fx[0:2,2] = rotmat2d(psi+np.pi/2)@u[:2]
         assert Fx.shape == (3, 3), "EKFSLAM.Fx: wrong shape"
         return Fx
 
@@ -229,10 +230,7 @@ class EKFSLAM:
         m = eta[3:].reshape((-1, 2)).T
 
         numM = m.shape[1]
-
-        Rot = rotmat2d(-x[2]) 
-        RotPiHalf = rotmat2d(np.pi/2)
-
+       
         delta_m = m - rho  # TODO, relative position of landmark to robot in world frame. m - rho that appears in (11.15) and (11.16)
 
         zc = delta_m - rotmat2d(x[2])@sensor_offset# TODO, (2, #measurements), each measured position in cartesian coordinates like
@@ -263,7 +261,7 @@ class EKFSLAM:
             jac_z_cb[:,2] = -Rpihalf@delta_m[:,i] # Keep it on the form in the assignment text
             ind = 2 * i # starting postion of the ith landmark into H
             delx_i = (zc[:,i].T)/(zr[i])@jac_z_cb
-            delang_i = (zc[:,i].T @ Rpihalf.T )/( zr[i]**2 )@ jac_z_cb
+            delang_i = (zc[:,i].T @ Rpihalf.T )/( np.linalg.norm(zc[:,i],2)**2 )@ jac_z_cb
             inds = slice(ind, ind + 2)  # the inds slice for the ith landmark into H
             Hx[inds,:] = np.array([delx_i,delang_i])
             Hm[inds,inds] = -Hx[inds,:2]
@@ -312,10 +310,10 @@ class EKFSLAM:
             zj = z[inds]    
             rot = rotmat2d(eta[2]+zj[1]) # TODO, rotmat in Gz
             zj_cart = zj[0] * rot[:,0]
-            lmnew[inds] =  eta[:2] + rotmat2d(eta[2]) @ zj_cart + sensor_offset_world# TODO, calculate position of new landmark in world frame
+            lmnew[inds] =  eta[:2] + zj_cart + sensor_offset_world# TODO, calculate position of new landmark in world frame
 
             Gx[inds, :2] = I2 # TODO
-            Gx[inds, 2] = zj_cart + sensor_offset_world_der# TODO
+            Gx[inds, 2] = zj[0]*rot[:,1] + sensor_offset_world_der# TODO
 
             Gz = rot@np.diag([1,zj[0]])# TODO
 
@@ -455,7 +453,8 @@ class EKFSLAM:
                 # Kalman cov update: use Joseph form for stability
                 jo = -W @ Ha
                 jo[np.diag_indices(jo.shape[0])] += 1  # same as adding Identity mat
-                Pupd = jo@P# TODO, Kalman update. This is the main workload on VP after speedups
+                
+                Pupd = jo@P#@jo.T + W@R[:Sa.shape[0],:Sa.shape[0]]@W.T# TODO, Kalman update. This is the main workload on VP after speedups
 
                 # calculate NIS, can use S_cho_factors
                 NIS = v.T@la.cho_solve(S_cho_factors, v)# TODO
@@ -481,7 +480,7 @@ class EKFSLAM:
                 z_new_inds[::2] = is_new_lmk
                 z_new_inds[1::2] = is_new_lmk
                 z_new = z[z_new_inds]
-                etaupd, Pupd = self.add_landmarks(eta,P,z)# TODO, add new landmarks.
+                etaupd, Pupd = self.add_landmarks(etaupd,Pupd,z_new)# TODO, add new landmarks.
 
         assert np.allclose(Pupd, Pupd.T), "EKFSLAM.update: Pupd must be symmetric"
         assert np.all(np.linalg.eigvals(Pupd) >= 0), "EKFSLAM.update: Pupd must be PSD"

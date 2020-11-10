@@ -1,3 +1,6 @@
+##RUN THIS:
+# python3 -O run_real_SLAM.py
+
 # %% Imports
 from scipy.io import loadmat
 from scipy.stats import chi2
@@ -106,17 +109,17 @@ b = 0.5  # laser distance to the left of center
 
 car = Car(L, H, a, b)
 
-sigmas = np.array([10,10,0.1])*1e-3# TODO
-CorrCoeff = np.array([[1, 0, 0], [0, 1, 0.9], [0, 0.9, 1]])
+sigmas = np.array([0.69,0.69,0.099])# TODO #Borrowed from another group to make this run
+CorrCoeff = np.array([[1, 0, 0], [0, 1, 0.3], [0, 0.3, 1]])*1e-2
 Q = np.diag(sigmas) @ CorrCoeff @ np.diag(sigmas)
 
-R = np.diag([0.1,0.2])# TODO
+R = np.diag([0.081**2,0.015**2])# TODO
 
 JCBBalphas = np.array(
-    np.array([1e-6,1e-4])# TODO
+    np.array([1e-4,1e-6])# TODO
 )
 sensorOffset = np.array([car.a + car.L, car.b])
-doAsso = False
+doAsso = True
 
 slam = EKFSLAM(Q, R, do_asso=doAsso, alphas=JCBBalphas, sensor_offset=sensorOffset)
 
@@ -140,9 +143,9 @@ mk = mk_first
 t = timeOdo[0]
 
 # %%  run
-N = 1000#K
+N = 5000#K
 
-doPlot = True
+doPlot = False
 
 lh_pose = None
 

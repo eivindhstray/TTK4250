@@ -98,13 +98,13 @@ K = len(z)
 M = len(landmarks)
 
 # %% Initilize
-Q = np.diag([10,10,0.1])*1e-3# TODO
+Q = np.diag([10,10,0.1])*1e-3# TODO 
 R = np.diag([0.06 ** 2, 0.02 ** 2])# TODO
 
 doAsso = True
 
 JCBBalphas = np.array(
-    [1e-4,1e-6] #TODO,
+    [1e-6,1e-8] #TODO,
 )  # first is for joint compatibility, second is individual
 # these can have a large effect on runtime either through the number of landmarks created
 # or by the size of the association search space.
@@ -124,7 +124,7 @@ CInorm = np.zeros((K, 2))
 NEESes = np.zeros((K, 3))
 
 # For consistency testing
-alpha = 0.05
+alpha = 0.95
 
 # init
 eta_pred[0] = poseGT[0]  # we start at the correct position for reference
@@ -156,6 +156,9 @@ for k, z_k in tqdm(enumerate(z[:N])):
 
     num_asso = np.count_nonzero(a[k] > -1)
 
+   
+    
+
     CI[k] = chi2.interval(alpha, 2 * num_asso)
 
     if num_asso > 0:
@@ -165,7 +168,7 @@ for k, z_k in tqdm(enumerate(z[:N])):
         NISnorm[k] = 1
         CInorm[k].fill(1)
 
-        NEESes[k] = EKFSLAM.NEESes(eta_hat[k][:3], P_hat[k][:3, :3], poseGT[k])# TODO, use provided function slam.NEESes
+    NEESes[k] = EKFSLAM.NEESes(eta_hat[k][:3], P_hat[k][:3, :3], poseGT[k])# TODO, use provided function slam.NEESes
 
     if doAssoPlot and k > 0:
         axAsso.clear()
@@ -213,7 +216,7 @@ for l, lmk_l in enumerate(lmk_est_final):
     ax2.plot(*el.T, "b")
 
 ax2.plot(*poseGT.T[:2], c="r", label="gt")
-ax2.plot(*pose_est[:2], c="g", label="est")
+ax2.plot(*pose_est.T[:2], c="g", label="est")
 ax2.plot(*ellipse(pose_est[-1, :2], P_hat[N - 1][:2, :2], 5, 200).T, c="g")
 ax2.set(title="results", xlim=(mins[0], maxs[0]), ylim=(mins[1], maxs[1]))
 ax2.legend()
