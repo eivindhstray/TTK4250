@@ -98,7 +98,7 @@ K = len(z)
 M = len(landmarks)
 
 # %% Initilize
-Q = np.diag([5,5,0.07])*1e-3# TODO 
+Q = np.diag([1.05,1.05,np.pi/50])*1e-3# TODO 
 R = np.diag([0.06 ** 2, 0.02 ** 2])# TODO
 
 doAsso = True
@@ -130,7 +130,7 @@ alpha = 0.95
 eta_pred[0] = poseGT[0]  # we start at the correct position for reference
 P_pred[0] = np.zeros((3, 3))  # we also say that we are 100% sure about that
 
-# %% Set up plotting
+# %% Set up plotting 
 # plotting
 
 doAssoPlot = False

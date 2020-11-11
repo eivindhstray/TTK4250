@@ -109,11 +109,11 @@ b = 0.5  # laser distance to the left of center
 
 car = Car(L, H, a, b)
 
-sigmas = np.array([0.69,0.69,0.099])# TODO #Borrowed from another group to make this run
-CorrCoeff = np.array([[1, 0, 0], [0, 1, 0.3], [0, 0.3, 1]])*1e-2
+sigmas = np.array([np.sqrt(1e-3),np.sqrt(1e-3),np.sqrt(1e-3*0.05)])# TODO #Borrowed from another group to make this run
+CorrCoeff = np.array([[1, 0, 0], [0, 1, 0.9], [0, 0.9, 1]])
 Q = np.diag(sigmas) @ CorrCoeff @ np.diag(sigmas)
 
-R = np.diag([0.081**2,0.015**2])# TODO
+R = np.diag([0.06**2,0.02**2])# TODO
 
 JCBBalphas = np.array(
     np.array([1e-4,1e-6])# TODO
@@ -164,7 +164,7 @@ if do_raw_prediction:  # TODO: further processing such as plotting
 
     for k in range(min(N, K - 1)):
         odos[k + 1] = odometry(speed[k + 1], steering[k + 1], 0.025, car)
-        odox[k + 1], _ = slam.predict(odox[k], P, odos[k + 1])
+        odox[k + 1], _ = slam.predict(odox[k], P.copy(), odos[k + 1])
 
 for k in tqdm(range(N)):
     if mk < mK - 1 and timeLsr[mk] <= timeOdo[k + 1]:
