@@ -98,13 +98,13 @@ K = len(z)
 M = len(landmarks)
 
 # %% Initilize
-Q = np.diag([10,10,0.1])*1e-3# TODO 
+Q = np.diag([5,5,0.07])*1e-3# TODO 
 R = np.diag([0.06 ** 2, 0.02 ** 2])# TODO
 
 doAsso = True
 
 JCBBalphas = np.array(
-    [1e-6,1e-8] #TODO,
+    [1e-4,1e-6] #TODO,
 )  # first is for joint compatibility, second is individual
 # these can have a large effect on runtime either through the number of landmarks created
 # or by the size of the association search space.
@@ -310,8 +310,10 @@ if playMovie:
                 el = ellipse(lmk_l, rI, 5, 200)
                 ax_movie.plot(*el.T, "b")
 
-            camera.snap()
+            #camera.snap()
+        
         animation = camera.animate(interval=100, blit=True, repeat=False)
+        
         print("playing movie")
 
     except ImportError:
@@ -321,3 +323,4 @@ if playMovie:
 
 plt.show()
 # %%
+#python3 -O run_simulated_SLAM.py
