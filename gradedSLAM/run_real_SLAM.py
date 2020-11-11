@@ -145,7 +145,7 @@ t = timeOdo[0]
 # %%  run
 N = 5000#K
 
-doPlot = False
+doPlot = True
 
 lh_pose = None
 

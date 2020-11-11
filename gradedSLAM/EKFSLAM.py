@@ -189,7 +189,7 @@ class EKFSLAM:
 
         # None as index ads an axis with size 1 at that position.
         # Numpy broadcasts size 1 dimensions to any size when needed
-        delta_m = m - x[:2].reshape(2,1) - (Rot@self.sensor_offset).reshape(2,1)# TODO, relative position of landmark to sensor on robot in world frame
+        delta_m = m - x[:2].reshape(2,1) - (rotmat2d(x[2])@self.sensor_offset).reshape(2,1)# TODO, relative position of landmark to sensor on robot in world frame
 
         zpredcart = [Rot @ mi for mi in delta_m.T] # TODO, predicted measurements in cartesian coordinates, beware sensor offset for VP
 
