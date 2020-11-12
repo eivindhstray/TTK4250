@@ -98,13 +98,18 @@ K = len(z)
 M = len(landmarks)
 
 # %% Initilize
-Q = np.diag([1.05,1.05,np.pi/50])*1e-3# TODO 
-R = np.diag([0.06 ** 2, 0.02 ** 2])# TODO
+#Q = np.diag([1.0,1.0,np.pi/80])*1e-3 BEST SO FAR
+#R = np.diag([0.06 ** 2, 0.02 ** 2]) BEST SO FAR
+
+Q = np.diag([1.0,1.0,np.pi/80])*1e-3 #BEST SO FAR
+R = np.diag([0.058 ** 2, 0.019 ** 2])
+
+
 
 doAsso = True
 
 JCBBalphas = np.array(
-    [1e-4,1e-6] #TODO,
+    [1e-4,1e-5] #TODO,
 )  # first is for joint compatibility, second is individual
 # these can have a large effect on runtime either through the number of landmarks created
 # or by the size of the association search space.
