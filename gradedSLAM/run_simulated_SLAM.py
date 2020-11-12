@@ -98,11 +98,11 @@ K = len(z)
 M = len(landmarks)
 
 # %% Initilize
-#Q = np.diag([1.0,1.0,np.pi/80])*1e-3 BEST SO FAR
-#R = np.diag([0.06 ** 2, 0.02 ** 2]) BEST SO FAR
+Q = np.diag([0.9,0.9,np.pi/85])*1e-3 #BEST SO FAR
+R = np.diag([0.06 ** 2, 0.02 ** 2]) #BEST SO FAR
 
-Q = np.diag([1.0,1.0,np.pi/80])*1e-3 #BEST SO FAR
-R = np.diag([0.058 ** 2, 0.019 ** 2])
+#Q = np.diag([1.0,1.0,np.pi/80])*1e-3 #BEST SO FAR
+#R = np.diag([0.058 ** 2, 0.019 ** 2])
 
 
 
