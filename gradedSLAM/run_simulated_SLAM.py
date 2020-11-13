@@ -10,6 +10,9 @@ from matplotlib import animation
 from scipy.stats import chi2
 import utils
 
+matplotlib.rc('font', size=20)
+matplotlib.rc('axes', titlesize=20)
+
 
 
 try:
@@ -106,7 +109,7 @@ R = np.diag([0.06 ** 2, 0.02 ** 2]) #BEST SO FAR
 
 
 
-doAsso = True
+doAsso = False
 
 JCBBalphas = np.array(
     [1e-4,1e-5] #TODO,
@@ -146,6 +149,8 @@ if doAssoPlot:
 # %% Run simulation
 N = K
 
+total_asso = 0
+
 print("starting sim (" + str(N) + " iterations)")
 
 for k, z_k in tqdm(enumerate(z[:N])):
@@ -169,6 +174,7 @@ for k, z_k in tqdm(enumerate(z[:N])):
     if num_asso > 0:
         NISnorm[k] = NIS[k] / (2 * num_asso)
         CInorm[k] = CI[k] / (2 * num_asso)
+        total_asso += num_asso
     else:
         NISnorm[k] = 1
         CInorm[k].fill(1)
@@ -186,9 +192,10 @@ for k, z_k in tqdm(enumerate(z[:N])):
         for x, y in zip(xcoords, ycoords):
             axAsso.plot(x, y, lw=3, c="r")
         axAsso.legend()
-        axAsso.set_title(f"k = {k}, {np.count_nonzero(a[k] > -1)} associations")
+        axAsso.set_title(f"k = {k}, {np.count_nonzero(a[k] > -1)} associations",fontsize=12)
         plt.draw()
         plt.pause(0.001)
+    
 
 
 print("sim complete")
@@ -240,6 +247,10 @@ ax3.plot(NISnorm[:N], lw=0.5)
 
 ax3.set_title(f'NIS, {insideCI.mean()*100}% inside CI')
 
+CINIS = np.mean(CInorm,axis=0)
+
+print("ANIS:{},CI:{}".format(np.mean(NISnorm[:N]),CINIS))
+
 # NEES
 
 fig4, ax4 = plt.subplots(nrows=3, ncols=1, figsize=(7, 5), num=4, clear=True, sharex=True)
@@ -259,6 +270,8 @@ for ax, tag, NEES, df in zip(ax4, tags, NEESes.T, dfs):
     print(f"ANEES {tag}: {NEES.mean()}")
 
 fig4.tight_layout()
+
+print("ANEES 3DOF:{}, CI:{}".format(np.mean(CI_ANEES),CI_NEES))
 
 # %% RMSE
 

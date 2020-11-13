@@ -25,6 +25,9 @@ from plotting import ellipse
 from vp_utils import detectTrees, odometry, Car
 from utils import rotmat2d
 
+matplotlib.rc('font', size=20)
+matplotlib.rc('axes', titlesize=20)
+
 # %% plot config check and style setup
 
 
@@ -109,15 +112,17 @@ b = 0.5  # laser distance to the left of center
 
 car = Car(L, H, a, b)
 
-sigmas = np.array([np.sqrt(1e-3),np.sqrt(1e-3),np.sqrt(1e-3*0.05)])# TODO #Borrowed from another group to make this run
-CorrCoeff = np.array([[1, 0, 0], [0, 1, 0.9], [0, 0.9, 1]])
+sigmas = np.array([np.sqrt(1.2e-3),np.sqrt(1.2e-3),np.sqrt(0.02*1e-3)])# TODO 
+CorrCoeff = np.array([[1, 0, 0], [0, 1, 0.4], [0, 0.4, 1]])
 Q = np.diag(sigmas) @ CorrCoeff @ np.diag(sigmas)
 
 R = np.diag([0.06**2,0.02**2])# TODO
 
 JCBBalphas = np.array(
-    np.array([1e-4,1e-6])# TODO
-)
+    [0.5,0.5] #TODO,
+)  # first is for joint compatibility, second is individual
+# these can have a large effect on runtime either through the number of landmarks created
+# or by the size of the association search space.
 sensorOffset = np.array([car.a + car.L, car.b])
 doAsso = True
 
@@ -135,15 +140,17 @@ CI = np.zeros((mK, 2))
 CInorm = np.zeros((mK, 2))
 
 # Initialize state
+START = 35000
 eta = np.array([Lo_m[0], La_m[1], 36 * np.pi / 180]) # you might want to tweak these for a good reference
 P = np.zeros((3, 3))
 
-mk_first = 1  # first seems to be a bit off in timing
+mk_first =  1  # first seems to be a bit off in timing
 mk = mk_first
 t = timeOdo[0]
 
+
 # %%  run
-N = K
+N = 2000
 
 doPlot = False
 
@@ -166,6 +173,8 @@ if do_raw_prediction:  # TODO: further processing such as plotting
         odos[k + 1] = odometry(speed[k + 1], steering[k + 1], 0.025, car)
         odox[k + 1], _ = slam.predict(odox[k], P.copy(), odos[k + 1])
 
+total_asso = 0
+
 for k in tqdm(range(N)):
     if mk < mK - 1 and timeLsr[mk] <= timeOdo[k + 1]:
         # Force P to symmetric: there are issues with long runs (>10000 steps)
@@ -180,11 +189,13 @@ for k in tqdm(range(N)):
         t = timeLsr[mk]  # ? reset time to this laser time for next post predict
         odo = odometry(speed[k + 1], steering[k + 1], dt, car)
         eta, P = slam.predict(eta,P,odo)# TODO predict
-
+        
         z = detectTrees(LASER[mk])
+        
         eta, P, NIS[mk], a[mk] = slam.update(eta,P,z)# TODO update
 
         num_asso = np.count_nonzero(a[mk] > -1)
+        total_asso += num_asso
 
         if num_asso > 0:
             NISnorm[mk] = NIS[mk] / (2 * num_asso)
@@ -232,6 +243,14 @@ for k in tqdm(range(N)):
 # NIS
 insideCI = (CInorm[:mk, 0] <= NISnorm[:mk]) * (NISnorm[:mk] <= CInorm[:mk, 1])
 
+ANIS = np.mean(NISnorm[:mk])
+CIANIS = np.array(chi2.interval(confidence_prob, 2 * total_asso)) / (
+                total_asso
+            )
+
+print("Confidence Interval {} : {}".format(CIANIS,ANIS))
+
+
 fig3, ax3 = plt.subplots(num=3, clear=True)
 ax3.plot(CInorm[:mk, 0], "--")
 ax3.plot(CInorm[:mk, 1], "--")
@@ -257,11 +276,19 @@ if do_raw_prediction:
 
 # %%
 fig6, ax6 = plt.subplots(num=6, clear=True)
-ax6.scatter(*eta[3:].reshape(-1, 2).T, color="r", marker="x")
-ax6.plot(*xupd[mk_first:mk, :2].T)
+ax6.scatter(*eta[3:].reshape(-1, 2).T, color="r", marker="x", label = "z_pred")
+ax6.plot(*xupd[mk_first:mk, :2].T,label = "predicted trajectory")
+ax6.scatter(
+        Lo_m[timeGps < timeOdo[N - 1]],
+        La_m[timeGps < timeOdo[N - 1]],
+        c="g",
+        marker=".",
+        label="GPS",
+    )
 ax6.set(
     title=f"Steps {k}, laser scans {mk-1}, landmarks {len(eta[3:])//2},\nmeasurements {z.shape[0]}, num new = {np.sum(a[mk] == -1)}"
 )
+ax6.legend()
 plt.show()
 
 # %%
