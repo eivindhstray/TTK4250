@@ -2,11 +2,11 @@
 
 Graded exercises in the course TTK4250 - Sensor Fusion at NTNU.
 
-##IMM-PDA
+## IMM-PDA
 - Code and report
 
-##ESKF
+## ESKF
 - Code and report
 
-##EKF-SLAM
+## EKF-SLAM
 - Code and report
